@@ -7,7 +7,7 @@
 import java.lang.String;
 import java.util.*;
 
-public class Token<TPRINT>
+public class Token
 {
     //Member variables for a Token object
     //Tokens enum for the label and ID of the token object
@@ -46,21 +46,24 @@ public class Token<TPRINT>
         private final int id;
         //HashMap so we can map the integer to its corresponding enum
         //This allows us to get the enum from an integer and also the integer based on the enum
-        private static Map map = new HashMap<>();
+        private static final Map<Integer, Tokens> map = new HashMap<>();
+        //Map each token ID number to its appropriate name/label
+        //This will happen on loading time
         static
         {
             for (Tokens t : Tokens.values())
             {
-                map.put(t.id, t);
+                map.put(t.getID(), t);
             }
         }
         Tokens(int id)
         {
             this.id = id;
         }
+        //Get the enum based on the id
         public static Tokens valueOf(int id)
         {
-            return (Tokens) map.get(id);
+            return map.get(id);
         }
         //return the number ID of the token
         public int getID()
@@ -116,7 +119,7 @@ public class Token<TPRINT>
     //Postconditions: tokenID of the current object is set to the value of i
     public void setTokenID(int i)
     {
-        this.tokenID = Tokens.values()[i];;
+        this.tokenID = Tokens.valueOf(i);
     }
 
     //Setter for lexeme
@@ -143,13 +146,7 @@ public class Token<TPRINT>
         this.colNo = col;
     }
 
-    //Getters for tokenID, one for the label and one for the ID number value of the token
-    //Preconditions: tokenID is not null
-    //Postconditions: return the label of the current token object as a String
-    public final String getTokenLabel()
-    {
-        return String.valueOf(Tokens.valueOf(this.tokenID.getID()));
-    }
+    //Getter for the ID number of the current token object
     //Preconditions: tokenID is not null
     //Postcondition: returns the ID number value of the current token object
     public final int getTokenID()
@@ -185,7 +182,7 @@ public class Token<TPRINT>
     @Override
     public String toString()
     {
-        //This is to fix indexing and out of bounds issues
+        //This is to fix indexing and out of bounds issues since 55 doesnt exist in the enum
         if(this.getTokenID() >= 56)
         {
             return "The token is " + TPRINT[this.getTokenID() - 1];
