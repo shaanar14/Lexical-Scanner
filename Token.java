@@ -77,8 +77,8 @@ public class Token
     private int lineNo;
     private int colNo;
     //static because we want TPRINT for all object instances of Token
-    //final because we do not want to change the array at all and ruin the pretty padding
-    String[] TPRINT = {
+    //final because TPRINT is used for output formatting and we do not want it to change
+    static final String[] TPRINT = {
             "T_EOF ",
             "TCD20 ",	"TCONS ",	"TTYPS ",	"TTTIS ",	"TARRS ",	"TMAIN ",
             "TBEGN ",	"TTEND ",	"TARAY ",	"TTTOF ",	"TFUNC ",	"TVOID ",
@@ -149,7 +149,7 @@ public class Token
     //Getter for the ID number of the current token object
     //Preconditions: tokenID is not null
     //Postcondition: returns the ID number value of the current token object
-    public final int getTokenID()
+    public int getTokenID()
     {
         return this.tokenID.getID();
     }
@@ -157,7 +157,7 @@ public class Token
     //Getter for lexeme
     //Preconditions: none
     //Postconditions: return the lexeme value for the current token object
-    public final String getLexeme()
+    public String getLexeme()
     {
         return this.lexeme;
     }
@@ -165,7 +165,7 @@ public class Token
     //Getter for lineNo
     //Preconditions: none
     //Postconditions: return the value of lineNo for the current token object
-    public final int getLineNo()
+    public int getLineNo()
     {
         return this.lineNo;
     }
@@ -173,9 +173,9 @@ public class Token
     //Getter for colNo
     //Preconditions: none
     //Postconditions: return the value of colNo for the current token object
-    public final int getColNo()
+    public int getColNo()
     {
-        return this.colNo;
+        return  this.colNo;
     }
 
     //Override to neatly format and output a token
