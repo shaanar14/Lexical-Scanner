@@ -50,21 +50,20 @@ public class DFSM
         //this.input = new StringBuffer();
     }
 
-    /*Setter for input
-    //Preconditions: none
-    //Postconditions: i is added to the end of the StringBuffer
-    public void setInput(String i)
-    {
-        this.input.append(i);
-    }*/
-    //TODO build dfsm submachines for each use case
-    //startMachine will proccess String line and will call specific processing functions depending on the value of line
-    //  for example if line is an indentifier then it will call the indentifierMachine function to handle and process an indentifier token
-    //Scanner class will handle all whitespaces before
-    //TODO write a function that handles whitespaces inbetween tokens such as equals space equals will return two equals tokens
-    //Preconditions: line is not ""  and line has had all white space removed and lineNo is >= 1
-    //Postconditions: line and lineNo will be sent to smaller DFSMs to be processed and turned into tokens
-    public void startMachine(String line, int lineNo, int colNo)
+    /*
+      TODO write a function that handles whitespaces inbetween tokens such as equals space equals will return two equals tokens
+      TODO consider refactoring to make baseMachine() a single exit-point function, reducing the number of return statements
+      baseMachine will proccess the String line and will call a specific function or functions based on the value of line
+        for example if line is an indentifier then it will call the indentifierMachine function to handle and process an indentifier token
+      All spaces/tabs at the start of the line are including so we can properly count the column number of the token
+        that is any indentation at the start of the line is carried through
+      Preconditions: line is not "" (an empty string) lineNo is >= 1
+      Postconditions: line and lineNo will be sent to a specific function or functions based on what the value of line is
+                      A Token object will be declared and initialized by these functions and returned
+                      The Token object returned will contain a tokenID, lexeme, line and column number
+                        which is determined by the function/s it is sent to
+     */
+    public Token baseMachine(String line, int lineNo, int colNo)
     {
         //ensure that line is not empty
         if(!line.isEmpty())
@@ -72,16 +71,17 @@ public class DFSM
             //determine if line is a keyword
             for (Keywords k : Keywords.values())
             {
+                //consider using compareTo() instead of equals()
                 if(line.equals(k.getKeyWord()))
                 {
                     //if line does match with a keyword then send line to a DFSM that handles keywords
                     //TODO decide where to check if line is upper or lower case in regards to CD20 keyword
-                    keywordMachine(line, lineNo, colNo);
+                    return keywordMachine(line, lineNo);
                 }
                 //if line does not match a keyword then send line to be processed as an error
                 else
                 {
-                    errorMachine(line, lineNo, colNo);
+                    return errorMachine(line, lineNo);
                 }
             }
             //determine if line is an indentifier
@@ -89,72 +89,164 @@ public class DFSM
             {
                 //indentifier is a smaller DFSM that determines if the line is an indentifier
                 //also error checks to see if that indentifier is a keyword
-                indentifier(line, lineNo);
+                return indentifierMachine(line, lineNo);
             }
             //determine if line is an integer literal, integer() will include logic to check if it is a float
             if(isDigit(line.charAt(0)))
             {
                 //if the char at index 0 is a digit then we send the line to a smaller DFSM to determine what kind of digit it is
                 //  integer() contains logic to determine if it is a float literal
-                integer(line, lineNo, colNo);
+                return integerMachine(line, lineNo);
             }
-            //switch for determining delimeters and operators
+            //switch for determining delimeters, operators and single/multiline comments in the case of a /
             switch(line.charAt(0))
             {
-                case '^': operator(line, lineNo); break;
-                case '%': operator(line, lineNo); break;
-                case '[': delimeters(line, lineNo); break;
-                case ']': delimeters(line, lineNo); break;
-                case ',': delimeters(line, lineNo); break;
-                case '(': delimeters(line, lineNo); break;
-                case ')': delimeters(line, lineNo); break;
-                case ':': delimeters(line, lineNo); break;
-                case ';': delimeters(line, lineNo); break;
-                case '.': delimeters(line, lineNo); break;
-                case '"': stringMachine(line, lineNo); break; //quotation marks signify the start of a string literal
-                case '=': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '+': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '-': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '*': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '/': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '<': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '>': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                case '!': if(line.charAt(1) == '='){compositeOperator(line, lineNo);} else {operator(line, lineNo);} break;
-                default: errorMachine(line, lineNo); break;
-            }
-            //check to determine if line is a comment and if so which type
-            if(line.charAt(0) == '/' && line.charAt(1) == '-' && line.charAt(2) == '-')
-            {
-                //if two - follow after the / then send the line and its lineNo to a smaller DFSM that processes single line comments
-                singleComment(line, lineNo);
-            }
-            else if (line.charAt(0) == '/' && line.charAt(1) == '*' && line.charAt(2) == '*')
-            {
-                //if two * follow after the / then send the line and its lineNo to a smaller DFSM that processes multi line comments
-                multiComment(line, lineNo);
+                //cases for delimeters
+                case '[': case ']': case ',': case '(': case ')': case ':': case ';': case '.':
+                    return delimMachine(line, lineNo);
+                //if any of the operators below have an equals sign after them then send the line and its line number to
+                //  the compositeOperator machine
+                case '=': case '+': case '-': case '<': case '>': case '!':
+                    if(line.charAt(1) == '='){return compositeOpMachine(line, lineNo);} else {return operatorMachine(line, lineNo);}
+                //remaining operators
+                case '^': case '%': return operatorMachine(line, lineNo);
+                //case for String literals
+                case '"': return stringMachine(line, lineNo);
+                //special case for /, check to see if its being used for a single or multi line comment or as an operator
+                case '/':
+                    if(line.charAt(1) == '-' && line.charAt(2) == '-')
+                    {
+                        return singleCommentMachine(line, lineNo);
+                    }
+                    else if(line.charAt(1) == '*' && line.charAt(2) == '*')
+                    {
+                        return multiCommentMachine(line, lineNo);
+                    }
+                    else
+                    {
+                        return operatorMachine(line, lineNo);
+                    }
+                //special case for *, check to see if it is a composite operator, end of a multiline comment or a regular operator
+                case '*':
+                    if(line.charAt(1) == '=')
+                    {
+                        return compositeOpMachine(line, lineNo);
+                    }
+                    else if(line.charAt(1) == '*' && line.charAt(2) == '/')
+                    {
+                        return multiCommentMachine(line, lineNo);
+                    }
+                    else
+                    {
+                        return operatorMachine(line, lineNo);
+                    }
+                //if all else fails send the line to be produced as an error
+                default: return errorMachine(line, lineNo);
             }
         }
         //if all of the above fail then send the line and its line number to the error processing machine
-        errorMachine(line, lineNo);
+        return errorMachine(line, lineNo);
     }
 
+    //Smaller DFSM for processing and handling keywords
+    //Preconditions:
+    //Postconditions:
+    private Token keywordMachine(String line, int lineNo)
+    {
+        Token token = null;
+        return token;
+    }
 
+    //Smaller DFSM for processing and handling identifiers
+    //Preconditions:
+    //Postconditions:
+    private Token indentifierMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling integer literals and determining if line is actually a float/real literal
+    //Preconditions:
+    //Postconditiosn:
+    private Token integerMachine(String line, int lineNo)
+    {
 
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling float/real literals, will only be called in integerMachine()
+    //Preconditions:
+    //Postconditions:
+    private void floatMachine(String line, int lineNo)
+    {
+    }
 
+    //Smaller DFSM for processing and handling string literals
+    //Preconditions:
+    //Postconditions:
+    private Token stringMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling delimeters
+    //Preconditions:
+    //Postconditions:
+    private Token delimMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling operators
+    //Preconditions:
+    //Postconditions:
+    private Token operatorMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling composite operators such as >=
+    //Preconditions: line is not "" (an empty string) and lineNo >= 1
+    //Postconditions: a Token object is returned containing a token ID for a composite operator and its associated line & column no
+    private Token compositeOpMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling single line comments
+    //Preconditions:
+    //Postconditions:
+    private Token singleCommentMachine(String line, int lineNo)
+    {
 
+        return null;
+    }
 
+    //Smaller DFSM for processing and handling multiline comments
+    //Preconditions:
+    //Postconditiosn:
+    private Token multiCommentMachine(String line, int lineNo)
+    {
+        return null;
+    }
 
-    //private helper functions to determine if a char is a letter or a digit
+    //Smaller DFSM for handling lexical errors and creating the apropriate TUNDF token
+    //Preconditions:
+    //Postconditions:
+    private Token errorMachine(String line, int lineNo)
+    {
+        return null;
+    }
+
+    //Private helper functions to determine if a char is a letter or a digit
+    //Preconditions: none
+    //Postconditions: returns true if c is a letter otherwise returns false
     private boolean isLetter(char c)
     {
         return Character.isLetter(c);
     }
+    //Preconditions: none
+    //Postconditions: returns true if c is a digit otherwise returns false
     private boolean isDigit(char c)
     {
         return Character.isDigit(c);
