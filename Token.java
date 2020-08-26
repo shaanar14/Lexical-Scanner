@@ -17,61 +17,6 @@ public class Token
     //private colNo for which column the token object starts haven't decided if a column starts at 0 or 1
     //static final TPRINT string array for output
 
-    enum Tokens
-    {
-        // Token value for end of file
-        T_EOF(0),
-
-        // The 30 keywords
-
-        TCD20(1),	TCONS(2),	TTYPS(3),	TTTIS(4),	TARRS(5),	TMAIN(6),
-        TBEGN(7),	TTEND(8),	TARAY(9),	TTTOF(10),	TFUNC(11),	TVOID(12),
-        TCNST(13),	TINTG(14),	TREAL(15),	TBOOL(16),	TTFOR(17),	TREPT(18),
-        TUNTL(19),	TIFTH(20),	TELSE(21),	TINPT(22),	TPRIN(23),	TPRLN(24),
-        TRETN(25),	TNOTT(26),	TTAND(27),	TTTOR(28),	TTXOR(29),	TTRUE(30),
-        TFALS(31),
-
-        // the operators and delimiters
-        TCOMA(32),	TLBRK(33),	TRBRK(34),	TLPAR(35),	TRPAR(36),
-        TEQUL(37),	TPLUS(38),	TMINS(39),	TSTAR(40),	TDIVD(41),	TPERC(42),
-        TCART(43),	TLESS(44),	TGRTR(45),	TCOLN(46),	TLEQL(47),	TGEQL(48),
-        TNEQL(49),	TEQEQ(50),	TPLEQ(51),	TMNEQ(52),	TSTEQ(53),	TDVEQ(54),
-        TSEMI(56),	TDOTT(57),
-
-        // the tokens which need tuple values
-
-        TIDEN(58),	TILIT(59),	TFLIT(60),	TSTRG(61),	TUNDF(62);
-
-        //private id variable for the TokenID enum
-        private final int id;
-        //HashMap so we can map the integer to its corresponding enum
-        //This allows us to get the enum from an integer and also the integer based on the enum
-        private static final Map<Integer, Tokens> map = new HashMap<>();
-        //Map each token ID number to its appropriate name/label
-        //This will happen on loading time
-        static
-        {
-            for (Tokens t : Tokens.values())
-            {
-                map.put(t.getID(), t);
-            }
-        }
-        Tokens(int id)
-        {
-            this.id = id;
-        }
-        //Get the enum based on the id
-        public static Tokens valueOf(int id)
-        {
-            return map.get(id);
-        }
-        //return the number ID of the token
-        public int getID()
-        {
-            return this.id;
-        }
-    }
-
     private Tokens tokenID;
     private String lexeme;
     private int lineNo;
@@ -93,6 +38,14 @@ public class Token
             "TIDEN ",	"TILIT ",	"TFLIT ",	"TSTRG ",	"TUNDF "};
 
     //Default Constructor
+    public Token()
+    {
+        this.tokenID = null;
+        this.lexeme = "";
+        this.lineNo = 0;
+        this.colNo = 0;
+    }
+    //Parameter Constructors
     //Preconditions: i >= 0
     //Postconditions: private member variables set to default values
     public Token(int i)
@@ -103,12 +56,25 @@ public class Token
         this.colNo = 0;
     }
 
-    //Parameter Constructor for all member variables
-    //Preconditions: value of parameters are not null
-    //Postconditions: values of private member variables set to the values of the parameters
+    public Token (Tokens t)
+    {
+        this.tokenID = t;
+        this.lexeme = "";
+        this.lineNo = 0;
+        this.colNo = 0;
+    }
     public Token(int i, String lex, int line, int col)
     {
         this.tokenID = Tokens.valueOf(i);
+        this.lexeme = lex;
+        this.lineNo = line;
+        this.colNo = col;
+    }
+    //Preconditions: value of parameters are not null
+    //Postconditions: values of private member variables set to the values of the parameters
+    public Token(Tokens t, String lex, int line, int col)
+    {
+        this.tokenID = t;
         this.lexeme = lex;
         this.lineNo = line;
         this.colNo = col;
@@ -178,18 +144,35 @@ public class Token
         return  this.colNo;
     }
 
+    private int findID(String i)
+    {
+        int id = 0;
+        Tokens.valueOf(i);
+        return id;
+    }
     //Override to neatly format and output a token
     @Override
     public String toString()
     {
+        String output = "";
         //This is to fix indexing and out of bounds issues since 55 doesnt exist in the enum
         if(this.getTokenID() >= 56)
         {
-            return "The token is " + TPRINT[this.getTokenID() - 1];
+            output = TPRINT[this.getTokenID() - 1];
         }
         else
         {
-            return "The token is " + TPRINT[this.getTokenID()];
+            output = TPRINT[this.getTokenID()];
         }
+        //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
+        if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60 || this.getTokenID() == 61)
+        {
+            output += this.getLexeme() + " " + this.getLineNo() + " " + this.getColNo();
+        }
+        else
+        {
+            output += this.getLineNo() + " " + this.getColNo();
+        }
+        return output;
     }
 }
