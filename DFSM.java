@@ -52,26 +52,6 @@ public class DFSM
         //this.input = new StringBuilder();
     }
 
-    //Smaller DFSM for processing and handling identifiers
-    //Preconditions: line.length() != 0 and lineNo >= 1
-    //Postconditions: return a Token object for an identifier token, if line matches a keyword then a Token object for that keyword is returned
-    public Token indentifierMachine(StringBuilder line, int lineNo, int colNo)
-    {
-        Token t = new Token();
-        for(Keywords k : Keywords.values())
-        {
-            if(line.toString().equalsIgnoreCase(k.getKeyWord()))
-            {
-                return t = keywordMachine(line, lineNo, colNo);
-            }
-        }
-        t.setTokenID(58);
-        t.setLexeme(line.toString());
-        t.setLineNo(lineNo);
-        t.setColNo(colNo);
-        return t;
-    }
-
     //Smaller DFSM for processing and handling keywords
     //Preconditions: line.length() != 0 and lineNo >= 1
     //Postconditions: return a Token object for a keyword
@@ -84,15 +64,6 @@ public class DFSM
         {
             if(k == Keywords.K0)
             {
-                String s = input.toString();
-                if(s.length() > 4)
-                {
-                    String sub = s.substring(4,s.length());
-                    //System.out.println(sub);
-                    //boolean test = sub.contains(" ");
-                    //System.out.println(test);
-                    t.setLexeme(sub);
-                }
                 //t = new Token(1, Keywords.K0.getKeyWord(), lineNo, 0);
                 t.setTokenID(1);
                 //t.setLexeme(input.toString());
@@ -113,16 +84,36 @@ public class DFSM
                 //System.out.println("Other keyword recognised");
             }
         }
-        /*t.setTokenID(62);
-        t.setLexeme(input.toString());
-        t.setLineNo(lineNo);*/
+        //if its not a keyword consider it as an identifier
+        t = indentifierMachine(input, lineNo, colNo);
+        return t;
+    }
+
+    //Smaller DFSM for processing and handling identifiers
+    //Preconditions: line.length() != 0 and lineNo >= 1
+    //Postconditions: return a Token object for an identifier token, if line matches a keyword then a Token object for that keyword is returned
+    public Token indentifierMachine(StringBuilder line, int lineNo, int colNo)
+    {
+        Token t = new Token();
+        for(Keywords k : Keywords.values())
+        {
+            if(line.toString().equalsIgnoreCase(k.getKeyWord()))
+            {
+                return t = keywordMachine(line, lineNo, colNo);
+            }
+        }
+        t.setTokenID(58);
+        t.setLexeme(line.toString());
+        t.setLineNo(lineNo);
+        t.setColNo(colNo);
         return t;
     }
 
     //Smaller DFSM for processing and handling integer literals and determining if line is actually a float/real literal
     //Preconditions:
-    //Postconditiosn:
-    public ArrayList<Token> integerMachine(StringBuilder line, int lineNo, int colNo)
+    //Postconditions:
+    //TODO big rework
+    public Token integerMachine(StringBuilder line, int lineNo, int colNo)
     {
         //StringBuilder buff = new StringBuilder(line);
         boolean error = false;
@@ -176,14 +167,15 @@ public class DFSM
         Token invalidToken = indentifierMachine(b, lineNo, colNo);
         t.add(temp);
         t.add(invalidToken);
-        return t;
+        return temp;
     }
 
     //Smaller DFSM for processing and handling float/real literals, will only be called in integerMachine()
     //Preconditions:
     //Postconditions:
-    public void floatMachine(StringBuilder line, int lineNo)
+    public Token floatMachine(StringBuilder line, int lineNo)
     {
+        return null;
     }
 
     //Smaller DFSM for processing and handling string literals
@@ -227,7 +219,7 @@ public class DFSM
     //Smaller DFSM for processing and handling delimeters
     //Preconditions:
     //Postconditions:
-    public Token delimMachine(StringBuilder line, int lineNo)
+    public Token delimMachine(char c, int lineNo, int colNo)
     {
         return null;
     }
@@ -235,7 +227,7 @@ public class DFSM
     //Smaller DFSM for processing and handling operators
     //Preconditions:
     //Postconditions:
-    public Token operatorMachine(StringBuilder line, int lineNo)
+    public Token operatorMachine(char c, int lineNo, int colNo)
     {
         return null;
     }
@@ -243,7 +235,7 @@ public class DFSM
     //Smaller DFSM for processing and handling composite operators such as >=
     //Preconditions: line is not "" (an empty string) and lineNo >= 1
     //Postconditions: a Token object is returned containing a token ID for a composite operator and its associated line & column no
-    public Token compositeOpMachine(StringBuilder line, int lineNo)
+    public Token compositeOpMachine(StringBuilder line, int lineNo, int i)
     {
         return null;
     }
@@ -269,9 +261,9 @@ public class DFSM
     //Smaller DFSM for handling lexical errors and creating the apropriate TUNDF token
     //Preconditions:
     //Postconditions:
-    public Token errorMachine(StringBuilder s, int lineNo)
+    public Token errorMachine(StringBuilder s, int lineNo, int colNo)
     {
-        Token t = new Token(62, s.toString(),lineNo,0);
+        Token t = new Token(62, s.toString(),lineNo,colNo);
         return t;
     }
 

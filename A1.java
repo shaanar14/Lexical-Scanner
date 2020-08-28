@@ -15,8 +15,8 @@ public class A1
         LexicalScanner lexical = new LexicalScanner();
         assert(args.length != 1) : "File name required";
         lexical.readFile(args[0]);
-        System.out.println(lexical.getToken());
-        System.out.println(lexical.getToken());
+        Token temp = lexical.getToken();
+        System.out.println(temp);
         /*DFSM machine = new DFSM();
         //String test = "CD20";
         StringBuffer buff = new StringBuffer("123abc");

@@ -79,7 +79,11 @@ public class Token
         this.lineNo = line;
         this.colNo = col;
     }
-
+    //Copy constructor
+    public Token(Token t)
+    {
+        this(t.tokenID, t.lexeme, t.lineNo, t.colNo);
+    }
     //Setter for tokenName
     //Preconditions: name is not empty
     //Postconditions: tokenID of the current object is set to the value of i
