@@ -154,17 +154,21 @@ public class Token
         //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
         if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60 || this.getTokenID() == 61)
         {
-            output += this.getLexeme() + " ";
+            //if the token is a string literal token add back the quotation marks
+            if(this.getTokenID() == 61)
+            {
+                output += '"' + String.format("%1.6s", this.getLexeme()) + "\"";
+            }
+            else
+            {
+                output += String.format("%1.6s", this.getLexeme()) + " ";
+            }
         }
         //if the token is TUNDF, format output for lexical error
         else if(this.getTokenID() == 62)
         {
             output += "\nlexical error " + this.getLexeme();
         }
-        /*else
-        {
-            output += this.getLineNo() + " " + this.getColNo();
-        }*/
         return output;
     }
 }

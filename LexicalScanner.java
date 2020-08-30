@@ -9,7 +9,10 @@
 import java.lang.String;
 public class LexicalScanner
 {
+    //Private member variables
+    //One for DFSM object to handle processing and determining tokens
     private final DFSM machine;
+    //One for holding the number of lines in a file
     private final int lineNo;
 
     //Default constructor
@@ -25,22 +28,13 @@ public class LexicalScanner
     //Generates a Token object
     //Preconditions: A1.scan.hasNextLine() == true
     //Postconditions: returns the next valid token as a Token object based on what A1.scan.next() returns
-    //TODO need to work out how to generate EOF token
-    public Token getToken()
-    {
-        //Could just pass A1.scan.next() straight into the function
-        String input = A1.scan.next();
-        return this.machine.keywordMachine(input, this.lineNo, 0); 
-    }
+    public Token getToken() {return this.machine.baseMachine(A1.scan.next(), this.lineNo, 0);}
 
     //Print function to print a token
     //Preconditions: t != null
     //Postconditions: prints out Token object t
     //TODO working out how to do wrapping when the line reaches 60 characters
-    public void printToken(Token t)
-    {
-        System.out.print(t);
-    }
+    public void printToken(Token t) {System.out.print(t);}
 
     //Determine if we have reached the end of a file
     //Postconditions: A1.scan has been declared and initialised
