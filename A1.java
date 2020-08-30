@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 /*
     Project 1b
     Author: Shaan Arora, C3236359
@@ -8,19 +6,30 @@ import java.util.ArrayList;
         Creates a single Scanner object which will run the scanner
         Hopefully outputs all found tokens and all lexical errors
 */
+import java.io.*;
+import java.util.Scanner;
+
 public class A1
 {
+    public static File fileName;
+    public static Scanner scan;
     public static void main(String[] args)
     {
-        LexicalScanner lexical = new LexicalScanner();
         assert(args.length != 1) : "File name required";
-        lexical.readFile(args[0]);
-        Token temp = lexical.getToken();
-        System.out.println(temp);
-        /*DFSM machine = new DFSM();
-        //String test = "CD20";
-        StringBuffer buff = new StringBuffer("123abc");
-        ArrayList<Token> tokens = machine.integerMachine(buff, 1);
-        System.out.println(tokens);*/
+        fileName = new File(args[0]);
+        try
+        {
+            scan = new Scanner(fileName);
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        LexicalScanner lexical = new LexicalScanner();
+        while(!lexical.eof())
+        {
+            Token temp = lexical.getToken();
+            lexical.printToken(temp);
+        }
+        scan.close();
     }
 }
