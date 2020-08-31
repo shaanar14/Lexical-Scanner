@@ -7,11 +7,14 @@
  */
 import java.lang.String;
 import java.util.ArrayList;
+import java.util.Optional;
 
 public class DFSM
 {
     //Private Member Variables
     private StringBuilder buffer;
+    private StringBuilder error;
+    private boolean string;
     //Enum for the reserved keywords so that we can assert that an identifier name is not the same as a keyword ignore case
     //CD20 keyword is the only exception that has to be uppercase
     //using K# as a naming convention for each enum where # is just a number so that I can store the keywords as strings
@@ -46,160 +49,158 @@ public class DFSM
     public DFSM()
     {
         this.buffer = new StringBuilder();
+        this.error = new StringBuilder();
+        this.string = false;
     }
 
     //Base processing machine for tokens, determines which subsystem DFSM input will be sent to so it can generate the appropriate token
     //Preconditions: input != " "
     //Postconditions: returns a Token object based on what input is
-    //TODO logic to generate a token when the buffer is not empty e.g. _123 will return TUNDF _ then how do I generate a token for 123 on the next function call
     public Token baseMachine(String input, int lineNo, int colNo)
     {
-        //add the String input to our buffer
+        //if the buffer is empty then we can add input to our buffer
+        //if(this.isBufferEmpty()) {this.buffer.append(input);}
         this.buffer.append(input);
-        //track if we have seen a quotation mark or not
-        //boolean qmFound = false;
+        //capture the char at index 0 in our buffer
         char c = this.buffer.charAt(0);
-        if(isLetter(c))
-        {
-            return this.keywordMachine(lineNo, colNo);
-        }
-        else if(isDigit(c))
-        {
-            return this.integerMachine(lineNo, colNo);
-        }
+        if(isWhiteSpace(c)){this.whiteSpaceMachine();}
+        if(isLetter(c) || c == '_'){return this.indentifierMachine(lineNo, colNo);}
+        else if(isDigit(c)){return this.integerMachine(lineNo, colNo);}
         else if(isOperator(c))
         {
-            //if the char at index 0 is an operator, check to see the char at the next index
-            if(isOperator(this.buffer.charAt(1))){return this.compositeOpMachine(lineNo, colNo);}
+            //if the char at index 0 is an operator, check to see the char at the next index is an equal sign
+            if(this.buffer.length() > 1 && this.buffer.charAt(1) == '=') {return this.compositeOpMachine(lineNo, colNo);}
             else{return this.operatorMachine(lineNo, colNo);}
         }
-        else if(isDelim(c))
+        else if(isDelim(c)) {return this.delimMachine(lineNo, colNo);}
+        else if(c == '"'){return this.stringMachine(0,0);}
+        //the only case where ! is accepted
+        else if(c == '!')
         {
-            if(c == '"' )
-            {
-                //TODO check to see if have an additional quotation mark
-                this.buffer.deleteCharAt(0);
-                return this.stringMachine(lineNo,colNo);
-            }
-            return this.delimMachine(lineNo, colNo);
+            //if the buffer has more than 1 char in it and the char at index 1 is a = then we can form a valid token
+            if(this.buffer.length() > 1 && this.buffer.charAt(1) == '=')
+            {return this.compositeOpMachine(lineNo, colNo);}
+            //otherwise ! on its own is not lexically valid so return a Token object with the ID for TUNDF
+            else{return this.errorMachine(lineNo, colNo);}
         }
-        else if(c == '_')
-        {
-            return this.indentifierMachine(this.buffer.toString(), lineNo, colNo);
-        }
-        else if(c == '!' && this.buffer.charAt(1) == '=')
-        {
-            return this.compositeOpMachine(lineNo, colNo);
-        }
-        else if(isInvalid(c))
-        {
-            return this.errorMachine(lineNo, colNo);
-        }
+        //isInvalid() also checks that c is a !, hopefully case above takes precedence
+        else if(isInvalid(c)){return this.errorMachine(lineNo, colNo);}
         //if all else fails return null?
+        //TODO find something to return that isnt null
         return null;
     }
 
     //Checks if the buffer is empty
     //Postconditions: none
     //Preconditions: returns true if the length of the buffer for the current DFSM object is 0, otherwise return false
-    public boolean isBufferEmpty()
-    {
-        if(this.buffer.length() == 0){return true;}
-        return false;
-    }
+    public boolean isBufferEmpty() {if(this.buffer.length() == 0){return true;} else {return false;}}
 
-    //Smaller DFSM for processing and handling keywords
-    //Preconditions: line.length() != 0 and lineNo >= 1
-    //Postconditions: return a Token object for a keyword
-    //TODO rework logic
-    public Token keywordMachine(int lineNo, int colNo)
+    //Smaller DFSM for processing and handling identifiers
+    //Preconditions: this.isBufferEmpty() != true
+    //Postconditions: return a Token object for an identifier token, if line matches a keyword then a Token object for that keyword is returned
+    //TODO test to see if an identifier or keyword is returned
+    public Token indentifierMachine(int lineNo, int colNo)
     {
         Token t = new Token();
-        //t.setLexeme(input);
         t.setLineNo(lineNo);
         t.setColNo(colNo);
-        //boolean to see if we have matched a keyword
-        boolean kMatched = false;
-        String input = "";
+        StringBuilder lex = new StringBuilder();
+        while(!this.isBufferEmpty())
+        {
+            //delete/consume the char we are looking at
+            if (isLetter(this.buffer.charAt(0)) || isDigit(this.buffer.charAt(0)) || this.buffer.charAt(0) == '_')
+            {
+                lex.append(this.buffer.charAt(0));
+                //delete/consume the char we are looking at
+                this.buffer.deleteCharAt(0);
+            }
+            else {break;}
+        }
+        //whitespace, operator, delimeter or invalid char found so we can set the tokenID and lexeme and return that token
+        if(lex.charAt(0) != '_')
+        {
+            //after consuming chars, if the the first char in lex is not an _ then check to see if lex is a keyword
+            int id = this.keywordMatch(lex);
+            //if lex does match a keyword then set the ID for the keyword matched
+            if(id != -1){t.setTokenID(id);}
+        }
+        //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
+        else{t.setTokenID(58);}
+        t.setLexeme(lex.toString());
+        return t;
+    }
+
+    //Helper function for indentifierMachine() to match keywords
+    //Preconditions: lex.length() != 0
+    //Postconditions: checks to see if lex is equal to a keyword and returns its ID otherwise returns -1
+    //TODO test to make sure the right keyword is returned
+    private int keywordMatch(StringBuilder lex)
+    {
         for(Keywords k : Keywords.values())
         {
             //should handle/enforce CD is uppercase
-            if(k == Keywords.K0 && input.equals(k.getKeyWord()))
+            if(k == Keywords.K0 && lex.toString().equals(k.getKeyWord()))
             {
-                t.setTokenID(1);
-                kMatched = true;
+                return 1;
             }
             //if the keyword is not CD20 then handle it as any of the other keywords
-            else if(input.equalsIgnoreCase(k.getKeyWord()))
+            else if(lex.toString().equalsIgnoreCase(k.getKeyWord()))
             {
                 //ID for the token is calculated by the index of the keyword matched in the Keywords enum + 1
-                int index = k.ordinal() + 1;
-                t.setTokenID(index);
-                //we have matched input to a keyword
-                kMatched = true;
+                return k.ordinal() + 1;
             }
+            //failed to match to a keyword
+            else{return -1;}
         }
-        //if we havent matched a keyword then make the ID for t to be the ID for an identifier token
-        if(kMatched == false){t.setTokenID(58);}
-        return t;
-    }
-
-    //Smaller DFSM for processing and handling identifiers
-    //Preconditions: line.length() != 0 and lineNo >= 1
-    //Postconditions: return a Token object for an identifier token, if line matches a keyword then a Token object for that keyword is returned
-    public Token indentifierMachine(String line, int lineNo, int colNo)
-    {
-        Token t = new Token();
-        t.setLineNo(0);
-        t.setColNo(0);
-        StringBuilder lex = new StringBuilder();
-        //we know that the char at 0 is an _ so check to see if the char at index 1 is a letter
-        if(!isLetter(this.buffer.charAt(1)))
-        {
-            //Underscore not followed by a letter is a lexical error
-            t.setTokenID(62);
-            t.setLexeme("_");
-            //since we have determined that the underscore is not followed by a letter we can delete the underscore from the buffer
-            this.buffer.deleteCharAt(0);
-        }
-        else
-        {
-            while(!isWhiteSpace(this.buffer.charAt(0)))
-            {
-                if(isInvalid(this.buffer.charAt(0))){break;}
-                lex.append(this.buffer.charAt(0));
-            }
-            //when we reach a whitespace then we can set the tokenID and lexeme and return that token
-            t.setTokenID(58);
-            t.setLexeme(lex.toString());
-        }
-        return t;
+        return -1;
     }
 
     //Smaller DFSM for processing and handling integer literals and determining if line is actually a float/real literal
-    //Preconditions: this.buffer.length() != 0
+    //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a integer literal Token object where any digits in buffer become its lexeme, lineNo for its line number and colNo for its column number
+    //TODO test 123.abc and 123..
     public Token integerMachine(int lineNo, int colNo)
     {
         Token t = new Token();
-        t.setLineNo(0);
-        t.setColNo(0);
+        t.setLineNo(lineNo);
+        t.setColNo(colNo);
         StringBuilder lex = new StringBuilder();
         boolean dot = false;
         //we already know that the we have a digit in the buffer at index 0
-        while(isDigit(this.buffer.charAt(0)))
+        while(!this.isBufferEmpty())
         {
-            lex.append(this.buffer.charAt(0));
-            this.buffer.deleteCharAt(0);
+            //if we see a letter or an operator or a invalid char then break and return an ILIT token
+            if(isDelim(this.buffer.charAt(0)))
+            {
+                if(this.buffer.charAt(0) == '.')
+                {
+                    //if we have already seen a dot then break otherwise float literal
+                    if(dot) {break;}
+                    else
+                    {
+                        dot = true;
+                        lex.append(this.buffer.charAt(0));
+                        this.buffer.deleteCharAt(0);
+                    }
+                }
+                else{break;}
+            }
+            else if(isDigit(this.buffer.charAt(0)) || dot == true)
+            {
+                lex.append(this.buffer.charAt(0));
+                this.buffer.deleteCharAt(0);
+            }
+            //break if c is a letter, operator, delimeter, whitespace or invalid char
+            else{break;}
         }
-        if(this.buffer.charAt(0) == '.')
-        {
-        }
+        if(!dot){t.setTokenID(59);}
+        else {t.setTokenID(60);}
+        t.setLexeme(lex.toString());
         return t;
     }
 
     //Smaller DFSM for processing and handling string literals
-    //Preconditions: this.buffer.length != 0
+    //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a string literal token object
     public Token stringMachine(int lineNo, int colNo)
     {
@@ -207,27 +208,25 @@ public class DFSM
         t.setLineNo(lineNo);
         t.setColNo(colNo);
         StringBuilder lex = new StringBuilder();
-        //we alread know that we have already seen a quotation mark and consumed it (deleted it from buffer)
         //iterate over our buffer until we see another quotation mark
-        while(this.buffer.charAt(0) != '"')
+        while(!this.isBufferEmpty())
         {
-            if(isInvalid(this.buffer.charAt(0)))
+            if(!isWhiteSpace(this.buffer.charAt(0)))
             {
-                break;
+                if(this.buffer.charAt(0) == '"')
+                {
+                    break;
+                }
             }
-            lex.append(this.buffer.charAt(0));
-            this.buffer.deleteCharAt(0);
+            t.setTokenID(62);
         }
-        //once we reach another quotation mark then the string literal is done
-        this.buffer.deleteCharAt(0);
-        t.setTokenID(61);
         t.setLexeme(lex.toString());
         return t;
     }
 
     //Smaller DFSM for processing and handling delimeters
-    //Preconditions:
-    //Postconditions:
+    //Preconditions: this.isBufferEmpty() != true
+    //Postconditions: returns a Token object containg the token ID for whatever delimeter is found at index 0 in our buffer plus its line and column number
     public Token delimMachine(int lineNo, int colNo)
     {
         Token t = new Token();
@@ -250,8 +249,8 @@ public class DFSM
     }
 
     //Smaller DFSM for processing and handling operators
-    //Preconditions: none
-    //Postconditions: returns a Token object containing an ID based on what c is, lineNo as its line number and colNo as its column number
+    //Preconditions: this.isBufferEmpty() != true
+    //Postconditions: returns a Token object containing an ID based on what the char is at index 0 in our buffer, lineNo as its line number and colNo as its column number
     public Token operatorMachine(int lineNo, int colNo)
     {
         Token t = new Token();
@@ -279,7 +278,7 @@ public class DFSM
     }
 
     //Smaller DFSM for processing and handling composite operators such as >=
-    //Preconditions: line is not "" (an empty string) and lineNo >= 1
+    //Preconditions: this.isBufferEmpty() != true
     //Postconditions: a Token object is returned containing a token ID for a composite operator and its associated line & column no
     public Token compositeOpMachine(int lineNo, int colNo)
     {
@@ -310,15 +309,54 @@ public class DFSM
         return t;
     }
 
+    //Smaller DFSM for processing and removing whitespaces from the buffer
+    //Preconditions: this.isBufferEmpty() != true
+    //Postconditions: removes all whitespaces from this.buffer
+    public void whiteSpaceMachine()
+    {
+        while(!isBufferEmpty())
+        {
+            if(!isWhiteSpace(this.buffer.charAt(0)))
+            {
+                return;
+            }
+            else
+            {
+                this.buffer.deleteCharAt(0);
+            }
+        }
+        return;
+    }
+
     //Smaller DFSM for handling lexical errors and creating the apropriate TUNDF token
-    //Preconditions: s != " "
+    //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a TUNDF token, meaning that s is a lexical error in regards to our scanner
-    public Token errorMachine(int lineNo, int colNo) {return new Token(62, "",lineNo,colNo);}
+    public Token errorMachine(int lineNo, int colNo)
+    {
+        Token t = new Token();
+        t.setLineNo(lineNo);
+        t.setColNo(colNo);
+        StringBuilder invalid = new StringBuilder();
+        while(!this.isBufferEmpty())
+        {
+            if(isInvalid(this.buffer.charAt(0)))
+            {
+                invalid.append(this.buffer.charAt(0));
+                this.buffer.deleteCharAt(0);
+            }
+            else{break;}
+        }
+        //set the token ID to that of TUNDF
+        t.setTokenID(62);
+        t.setLexeme(invalid.toString());
+        return t;
+    }
 
     //Helper functions to determine what kind of char c is
     //Preconditions: none
     //Postconditions: returns true if c is a letter otherwise false
     private boolean isLetter(char c) {return Character.isLetter(c);}
+
     //Preconditions: none
     //Postconditons: returns true if c is a digit otherwise false
     private boolean isDigit(char c) {return Character.isDigit(c);}
@@ -326,13 +364,16 @@ public class DFSM
     //Preconditions: none
     //Postconditions: returns true if c is an operator otherwise false
     private boolean isOperator(char c) {return c == '+' || c == '-' || c == '/' || c == '*' || c == '=' || c == '<' || c == '>' || c == '^' || c == '%';}
+
     //Preconditions: none
     //Postconditions: return true if c is a delimeter otherwise false
-    private boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ';' || c == ':' || c == '"';}
+    private boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ';' || c == ':';}
+
     //Preconditions: none
     //Postconditons: returns true if c is a whitespace character otherwise false
     private boolean isWhiteSpace(char c) {return Character.isWhitespace(c);}
-    //Preconditions:
+
+    //Preconditions: none
     //Postconditions: returns true if c is an invalid character otherwise false
-    private boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#';}
+    private boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!';}
 }

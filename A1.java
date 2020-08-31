@@ -24,19 +24,19 @@ public class A1
         {
             e.printStackTrace();
         }
-        LexicalScanner lexical = new LexicalScanner();
-        /*while(!lexical.eof())
+        DFSM machine = new DFSM();
+        while(scan.hasNextLine())
+        {
+            String s = scan.nextLine();
+            Token temp = machine.baseMachine(s,0,0);
+            System.out.println(temp);
+        }
+        /*LexicalScanner lexical = new LexicalScanner();
+        while(!lexical.eof())
         {
             Token temp = lexical.getToken();
             lexical.printToken(temp);
         }*/
-        DFSM testMachine = new DFSM();
-        String testString = "\"This is a test string\"", testString2 = "_123", testString3 = "<=", testString4 = "!=";
-        Token t1 = testMachine.baseMachine(testString,0,0);
-        Token t2 = testMachine.baseMachine(testString2,0,0);
-        Token t3 = testMachine.baseMachine(testString3,0,0);
-        Token t4 = testMachine.baseMachine(testString4,0,0);
-        System.out.printf("%s %s %s %s", t1, t2, t3, t4);
         scan.close();
         System.exit(0);
     }

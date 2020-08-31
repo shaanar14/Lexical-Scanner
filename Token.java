@@ -164,10 +164,10 @@ public class Token
                 output += String.format("%1.6s", this.getLexeme()) + " ";
             }
         }
-        //if the token is TUNDF, format output for lexical error
+        //if the token is TUNDF, TUNDF will print first then on a new line the lexeme for it then add the new line character
         else if(this.getTokenID() == 62)
         {
-            output += "\nlexical error " + this.getLexeme();
+            output += "\nlexical error " + this.getLexeme() + '\n';
         }
         return output;
     }
