@@ -6,8 +6,6 @@
         that will take a string and either reject it or accept it & output its associated token
  */
 import java.lang.String;
-import java.util.ArrayList;
-import java.util.Optional;
 
 public class DFSM
 {
@@ -63,31 +61,47 @@ public class DFSM
         this.buffer.append(input);
         //capture the char at index 0 in our buffer
         char c = this.buffer.charAt(0);
-        if(isWhiteSpace(c)){this.whiteSpaceMachine();}
-        if(isLetter(c) || c == '_'){return this.indentifierMachine(lineNo, colNo);}
-        else if(isDigit(c)){return this.integerMachine(lineNo, colNo);}
-        else if(isOperator(c))
+        if (isWhiteSpace(c))
+        {
+            if(c == '\n' && !this.isBufferEmpty())
+            {
+                this.buffer.deleteCharAt(0);
+            }
+            //consume and delete all whitespaces
+            this.whiteSpaceMachine();
+        }
+        //if we have deleted whitespaces and the buffer is not empty reset char c
+        //TODO THIS IS THE GENERAL LOCATION WHERE THE T_EOF TOKEN AT THE END OF EACH LINE IS HAPPENING
+        if (!this.isBufferEmpty())
+        {
+            c = this.buffer.charAt(0);
+        }
+        if (isLetter(c) || c == '_') {return this.indentifierMachine(lineNo, colNo);}
+        else if (isDigit(c)) {return this.integerMachine(lineNo, colNo);}
+        else if (isOperator(c))
         {
             //if the char at index 0 is an operator, check to see the char at the next index is an equal sign
-            if(this.buffer.length() > 1 && this.buffer.charAt(1) == '=') {return this.compositeOpMachine(lineNo, colNo);}
-            else{return this.operatorMachine(lineNo, colNo);}
+            if (this.buffer.length() > 1 && this.buffer.charAt(1) == '=')
+            {
+                return this.compositeOpMachine(lineNo, colNo);
+            } else
+            {
+                return this.operatorMachine(lineNo, colNo);
+            }
         }
-        else if(isDelim(c)) {return this.delimMachine(lineNo, colNo);}
-        else if(c == '"'){return this.stringMachine(0,0);}
+        else if (isDelim(c)) {return this.delimMachine(lineNo, colNo);}
+        else if (c == '"') {return this.stringMachine(0, 0);}
         //the only case where ! is accepted
-        else if(c == '!')
+        else if (c == '!')
         {
             //if the buffer has more than 1 char in it and the char at index 1 is a = then we can form a valid token
-            if(this.buffer.length() > 1 && this.buffer.charAt(1) == '=')
-            {return this.compositeOpMachine(lineNo, colNo);}
+            if (this.buffer.length() > 1 && this.buffer.charAt(1) == '=') {return this.compositeOpMachine(lineNo, colNo);}
             //otherwise ! on its own is not lexically valid so return a Token object with the ID for TUNDF
             else{return this.errorMachine(lineNo, colNo);}
         }
         //isInvalid() also checks that c is a !, hopefully case above takes precedence
-        else if(isInvalid(c)){return this.errorMachine(lineNo, colNo);}
-        //if all else fails return null?
-        //TODO find something to return that isnt null
-        return null;
+        else if (isInvalid(c)){return this.errorMachine(lineNo, colNo);}
+        else{return new Token(0, "", lineNo, colNo);}
     }
 
     //Checks if the buffer is empty
@@ -98,7 +112,6 @@ public class DFSM
     //Smaller DFSM for processing and handling identifiers
     //Preconditions: this.isBufferEmpty() != true
     //Postconditions: return a Token object for an identifier token, if line matches a keyword then a Token object for that keyword is returned
-    //TODO test to see if an identifier or keyword is returned
     public Token indentifierMachine(int lineNo, int colNo)
     {
         Token t = new Token();
@@ -114,6 +127,11 @@ public class DFSM
                 //delete/consume the char we are looking at
                 this.buffer.deleteCharAt(0);
             }
+            else if(isWhiteSpace(this.buffer.charAt(0)))
+            {
+                this.whiteSpaceMachine();
+                break;
+            }
             else {break;}
         }
         //whitespace, operator, delimeter or invalid char found so we can set the tokenID and lexeme and return that token
@@ -123,9 +141,9 @@ public class DFSM
             int id = this.keywordMatch(lex);
             //if lex does match a keyword then set the ID for the keyword matched
             if(id != -1){t.setTokenID(id);}
+            //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
+            else{t.setTokenID(58);}
         }
-        //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
-        else{t.setTokenID(58);}
         t.setLexeme(lex.toString());
         return t;
     }
@@ -133,7 +151,6 @@ public class DFSM
     //Helper function for indentifierMachine() to match keywords
     //Preconditions: lex.length() != 0
     //Postconditions: checks to see if lex is equal to a keyword and returns its ID otherwise returns -1
-    //TODO test to make sure the right keyword is returned
     private int keywordMatch(StringBuilder lex)
     {
         for(Keywords k : Keywords.values())
@@ -149,8 +166,6 @@ public class DFSM
                 //ID for the token is calculated by the index of the keyword matched in the Keywords enum + 1
                 return k.ordinal() + 1;
             }
-            //failed to match to a keyword
-            else{return -1;}
         }
         return -1;
     }
@@ -158,7 +173,7 @@ public class DFSM
     //Smaller DFSM for processing and handling integer literals and determining if line is actually a float/real literal
     //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a integer literal Token object where any digits in buffer become its lexeme, lineNo for its line number and colNo for its column number
-    //TODO test 123.abc and 123..
+    //TODO tested 123.abc and 123.. which fails
     public Token integerMachine(int lineNo, int colNo)
     {
         Token t = new Token();

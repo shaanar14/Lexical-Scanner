@@ -39,7 +39,7 @@ public class Token
 
     //Default Constructor
     //Preconditions: none
-    //Postconditions: Private member variables set to default values
+    //Postconditions: Private member variables set to default values, using end of file token as default
     public Token()
     {
         this.tokenID = null;

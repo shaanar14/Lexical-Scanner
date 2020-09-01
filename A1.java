@@ -20,23 +20,16 @@ public class A1
         try
         {
             scan = new Scanner(fileName);
-        } catch (FileNotFoundException e)
+        } catch (IOException e)
         {
             e.printStackTrace();
         }
-        DFSM machine = new DFSM();
-        while(scan.hasNextLine())
-        {
-            String s = scan.nextLine();
-            Token temp = machine.baseMachine(s,0,0);
-            System.out.println(temp);
-        }
-        /*LexicalScanner lexical = new LexicalScanner();
-        while(!lexical.eof())
+        LexicalScanner lexical = new LexicalScanner();
+        do
         {
             Token temp = lexical.getToken();
             lexical.printToken(temp);
-        }*/
+        } while(!lexical.eof());
         scan.close();
         System.exit(0);
     }
