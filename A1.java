@@ -11,26 +11,19 @@ import java.util.Scanner;
 
 public class A1
 {
-    public static File fileName;
-    public static Scanner scan;
     public static void main(String[] args)
     {
         assert(args.length != 1) : "File name required";
-        fileName = new File(args[0]);
-        try
-        {
-            scan = new Scanner(fileName);
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        String fileName = args[0];
         LexicalScanner lexical = new LexicalScanner();
-        do
+        lexical.readFile(fileName);
+        /*do
         {
             Token temp = lexical.getToken();
             lexical.printToken(temp);
-        } while(!lexical.eof());
-        scan.close();
+        } while(!lexical.eof());*/
+        boolean test = lexical.findSLComment();
+        System.out.println(test);
         System.exit(0);
     }
 }

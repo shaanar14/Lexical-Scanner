@@ -9,15 +9,15 @@ import java.lang.String;
 
 public class DFSM
 {
-    //Private Member Variables
-    private StringBuilder buffer;
-    private StringBuilder error;
-    private boolean string;
+    //public Member Variables
+    public StringBuilder buffer;
+    public StringBuilder error;
+    public boolean string;
     //Enum for the reserved keywords so that we can assert that an identifier name is not the same as a keyword ignore case
     //CD20 keyword is the only exception that has to be uppercase
     //using K# as a naming convention for each enum where # is just a number so that I can store the keywords as strings
     //TODO consider putting them in LexicalScanner.java or in a seperate file
-    private enum Keywords
+    public enum Keywords
     {
         K0("CD20"),    K1("constants"), K2("types"), K3("is"),     K4("arrays"), K5("main"),
         K6("begin"),   K7("end"),       K8("array"), K9("of"),     K10("func"),  K11("void"),
@@ -25,8 +25,8 @@ public class DFSM
         K18("until"),  K19("if"),       K20("else"), K21("input"), K22("print"), K23("println"),
         K24("return"), K25("not"),      K26("and"),  K27("or"),    K28("xor"),   K29("true"),
         K30("false");
-        //private String member variable for the enum to hold the actual keyword
-        private final String keyWord;
+        //public String member variable for the enum to hold the actual keyword
+        public final String keyWord;
         //constructor for the enum
         Keywords(String word)
         {
@@ -43,7 +43,7 @@ public class DFSM
 
     //Default constructor
     //Preconditions: none
-    //Postconditions: private member variables are initialized to default values
+    //Postconditions: public member variables are initialized to default values
     public DFSM()
     {
         this.buffer = new StringBuilder();
@@ -83,14 +83,16 @@ public class DFSM
             //if the char at index 0 is an operator, check to see the char at the next index is an equal sign
             if (this.buffer.length() > 1 && this.buffer.charAt(1) == '=')
             {
+                //if we have % followed by an equals then return the % and = as seperator operator tokens
+                if(this.buffer.charAt(0) == '%'){return this.operatorMachine(lineNo, colNo);}
                 return this.compositeOpMachine(lineNo, colNo);
-            } else
-            {
-                return this.operatorMachine(lineNo, colNo);
             }
+            else{return this.operatorMachine(lineNo, colNo);}
         }
         else if (isDelim(c)) {return this.delimMachine(lineNo, colNo);}
-        else if (c == '"') {return this.stringMachine(0, 0);}
+        else if (c == '"')
+        {return new Token();
+        }
         //the only case where ! is accepted
         else if (c == '!')
         {
@@ -151,7 +153,7 @@ public class DFSM
     //Helper function for indentifierMachine() to match keywords
     //Preconditions: lex.length() != 0
     //Postconditions: checks to see if lex is equal to a keyword and returns its ID otherwise returns -1
-    private int keywordMatch(StringBuilder lex)
+    public int keywordMatch(StringBuilder lex)
     {
         for(Keywords k : Keywords.values())
         {
@@ -173,43 +175,26 @@ public class DFSM
     //Smaller DFSM for processing and handling integer literals and determining if line is actually a float/real literal
     //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a integer literal Token object where any digits in buffer become its lexeme, lineNo for its line number and colNo for its column number
-    //TODO tested 123.abc and 123.. which fails
+    //TODO tested 123.abc and 123.. which fails also doesn't help that T_EOF is add at the end of every line
     public Token integerMachine(int lineNo, int colNo)
     {
         Token t = new Token();
         t.setLineNo(lineNo);
         t.setColNo(colNo);
         StringBuilder lex = new StringBuilder();
-        boolean dot = false;
+        boolean dot = false, digit = false;
         //we already know that the we have a digit in the buffer at index 0
         while(!this.isBufferEmpty())
         {
-            //if we see a letter or an operator or a invalid char then break and return an ILIT token
-            if(isDelim(this.buffer.charAt(0)))
-            {
-                if(this.buffer.charAt(0) == '.')
-                {
-                    //if we have already seen a dot then break otherwise float literal
-                    if(dot) {break;}
-                    else
-                    {
-                        dot = true;
-                        lex.append(this.buffer.charAt(0));
-                        this.buffer.deleteCharAt(0);
-                    }
-                }
-                else{break;}
-            }
-            else if(isDigit(this.buffer.charAt(0)) || dot == true)
+            if(isDigit(this.buffer.charAt(0)) || dot)
             {
                 lex.append(this.buffer.charAt(0));
                 this.buffer.deleteCharAt(0);
+                digit = true;
             }
-            //break if c is a letter, operator, delimeter, whitespace or invalid char
             else{break;}
         }
-        if(!dot){t.setTokenID(59);}
-        else {t.setTokenID(60);}
+        t.setTokenID(59);
         t.setLexeme(lex.toString());
         return t;
     }
@@ -217,27 +202,56 @@ public class DFSM
     //Smaller DFSM for processing and handling string literals
     //Preconditions: this.isBufferEmpty() != true
     //Postconditions: returns a string literal token object
+    /*TODO rework the entire function "abc" returns TUNDF " TIDEN TUNDF "
     public Token stringMachine(int lineNo, int colNo)
     {
         Token t = new Token();
         t.setLineNo(lineNo);
         t.setColNo(colNo);
         StringBuilder lex = new StringBuilder();
+        boolean qm1 = false, qm2 = false, valid = false;
         //iterate over our buffer until we see another quotation mark
         while(!this.isBufferEmpty())
         {
-            if(!isWhiteSpace(this.buffer.charAt(0)))
+            if(this.buffer.charAt(0) == '\n')
             {
-                if(this.buffer.charAt(0) == '"')
+                break;
+            }
+            else if(this.buffer.charAt(0) == '"')
+            {
+                //if we have found any quotation marks then mark that we have found the first one for our string literal
+                if(qm1== false && qm2 == false)
                 {
-                    break;
+                    //delete the quotation mark
+                    this.buffer.deleteCharAt(0);
+                    //mark that we have found the first quotation mark
+                    qm1 = true;
+                }
+                else if(qm1 == true && qm2 == false)
+                {
+                    //we have found another quotation mark so delete it from the buffer
+                    this.buffer.deleteCharAt(0);
+                    //mark that we have found a second quotation mark
+                    qm2 = true;
                 }
             }
-            t.setTokenID(62);
+            else
+            {
+                lex.append(this.buffer.charAt(0));
+                this.buffer.deleteCharAt(0);
+                valid = true;
+            }
         }
-        t.setLexeme(lex.toString());
+        //if we have found
+        if(qm1 && valid && qm2)
+        {
+            t.setTokenID(61);
+            t.setLexeme(lex.toString());
+        }
+        else if()
+        //return a TUNDF error token because the string literal has been terminated by the new line character
         return t;
-    }
+    }*/
 
     //Smaller DFSM for processing and handling delimeters
     //Preconditions: this.isBufferEmpty() != true
@@ -367,28 +381,28 @@ public class DFSM
         return t;
     }
 
-    //Helper functions to determine what kind of char c is
+    //Helper functions to determine what kind of char c is, changed to be static so LexicalScanner.java can access them
     //Preconditions: none
     //Postconditions: returns true if c is a letter otherwise false
-    private boolean isLetter(char c) {return Character.isLetter(c);}
+    public static boolean isLetter(char c) {return Character.isLetter(c);}
 
     //Preconditions: none
     //Postconditons: returns true if c is a digit otherwise false
-    private boolean isDigit(char c) {return Character.isDigit(c);}
+    public static boolean isDigit(char c) {return Character.isDigit(c);}
 
     //Preconditions: none
     //Postconditions: returns true if c is an operator otherwise false
-    private boolean isOperator(char c) {return c == '+' || c == '-' || c == '/' || c == '*' || c == '=' || c == '<' || c == '>' || c == '^' || c == '%';}
+    public static boolean isOperator(char c) {return c == '+' || c == '-' || c == '/' || c == '*' || c == '=' || c == '<' || c == '>' || c == '^' || c == '%';}
 
     //Preconditions: none
     //Postconditions: return true if c is a delimeter otherwise false
-    private boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ';' || c == ':';}
+    public static boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ';' || c == ':';}
 
     //Preconditions: none
-    //Postconditons: returns true if c is a whitespace character otherwise false
-    private boolean isWhiteSpace(char c) {return Character.isWhitespace(c);}
+    //Postconditons: returns true if c is a whitespace character  otherwise false, the new line character is considered a whitespace
+    public static boolean isWhiteSpace(char c) {return Character.isWhitespace(c);}
 
     //Preconditions: none
     //Postconditions: returns true if c is an invalid character otherwise false
-    private boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!';}
+    public static boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!';}
 }
