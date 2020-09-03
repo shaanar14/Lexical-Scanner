@@ -15,7 +15,7 @@ public class LexicalScanner
 {
     //Private member variables
     //One for DFSM object to handle processing and determining tokens
-    private final DFSM machine;
+    private final Factory machine;
     //Holds all generated tokens
     private ArrayList<Token> stream;
     //Stores the entire file being read in and thus tokenized
@@ -30,7 +30,7 @@ public class LexicalScanner
     //Postconditions: intilise private memeber variables to default values;
     public LexicalScanner()
     {
-        this.machine = new DFSM();
+        this.machine = new Factory();
         this.stream = new ArrayList<>();
         this.input = new StringBuilder();
         this.lineNo = 0;
@@ -62,20 +62,20 @@ public class LexicalScanner
             //everytime we look at a char increment column number
             this.colNo++;
             //TODO work out logic for isLetter and isDigit
-            if(DFSM.isLetter(c))
+            if(Factory.isLetter(c))
             {
                 //TODO use cases, strings and identifiers which also handles keywords
                 lex.append(c);
                 this.pos = i;
             }
-            else if(DFSM.isDigit(c))
+            else if(Factory.isDigit(c))
             {
                 //TODO use cases - integer literals, float literals, as part of an identifier
                 //add the number to lex
                 lex.append(c);
                 this.pos = i;
             }
-            else if(DFSM.isDelim(c))
+            else if(Factory.isDelim(c))
             {
                 //generate a token for the delimeter
                 temp = this.machine.delimMachine(c,this.lineNo, this.colNo);
@@ -84,7 +84,7 @@ public class LexicalScanner
                 //break so we can immedietaly return temp
                 break;
             }
-            else if(DFSM.isOperator(c))
+            else if(Factory.isOperator(c))
             {
                 // %= doesnt exist
                 if(this.lookUp(i+1) == '=' && c != '%')
@@ -110,7 +110,7 @@ public class LexicalScanner
             {
                 this.pos = i;
                 lex.append(c);
-                if(!DFSM.isLetter(this.lookUp(i+1)) || !DFSM.isDigit(this.lookUp(i+1)))
+                if(!Factory.isLetter(this.lookUp(i+1)) || !Factory.isDigit(this.lookUp(i+1)))
                 {
                     //if the char after the underscore is not a letter or a digit then return a TUNDF token
                     temp.setTokenID(62);
@@ -160,7 +160,7 @@ public class LexicalScanner
 
                 this.pos = i;
             }
-            else if (DFSM.isWhiteSpace(c))
+            else if (Factory.isWhiteSpace(c))
             {
                 //any spaces or tabs we just add it to lex more important for cases such as string literals
                 if (c != '\n'){lex.append(c);}
@@ -174,13 +174,13 @@ public class LexicalScanner
                     break;
                 }
             }
-            else if(DFSM.isInvalid(c))
+            else if(Factory.isInvalid(c))
             {
                 this.pos = i;
                 lex.append(c);
                 //if statement should allow for grouping of invalid chars such that we do not need to return a single token for each individual invalid char
                 //c is an invalid char so check to see if the char after is valid
-                if(!DFSM.isInvalid(this.lookUp(i+1)))
+                if(!Factory.isInvalid(this.lookUp(i+1)))
                 {
                     temp.setTokenID(62);
                     temp.setLexeme(lex.toString());

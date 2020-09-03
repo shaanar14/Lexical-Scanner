@@ -7,7 +7,7 @@
 
 import java.lang.String;
 
-public class DFSM
+public class Factory
 {
     //Generates and returns an identifier or keyword token
     //Preconditions: lex.length() != 0
@@ -53,10 +53,7 @@ public class DFSM
     //Generates integer literal tokens
     //Preconditions: lex.length() != 0
     //Postconditions: returns a integer literal Token object
-    public Token integerMachine(StringBuilder lex, int lineNo, int colNo)
-    {
-        return new Token(59, lex.toString(), lineNo, colNo);
-    }
+    public Token integerMachine(StringBuilder lex, int lineNo, int colNo) {return new Token(59, lex.toString(), lineNo, colNo);}
 
     //Generates a Token object based on what delimeter c is
     //Preconditions: isDelim(c) == true
