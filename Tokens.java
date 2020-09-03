@@ -1,3 +1,11 @@
+/*
+    Project 1b
+    Author: Shaan Arora, C3236359
+    Tokens Enum
+        Enum for the token IDs
+        A HashMap object is used to match the enum to its ID.
+ */
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,9 +36,11 @@ enum Tokens
 
     //private id variable for the TokenID enum
     private final int id;
+
     //HashMap so we can map the integer to its corresponding enum
     //This allows us to get the enum from an integer and also the integer based on the enum
     private static final Map<Integer, Tokens> map = new HashMap<>();
+
     //Map each token ID number to its appropriate name/label
     //This will happen on loading time
     static
@@ -40,18 +50,13 @@ enum Tokens
             map.put(t.getID(), t);
         }
     }
-    Tokens(int id)
-    {
-        this.id = id;
-    }
+
+    //Constructor for the enum
+    Tokens(int id) {this.id = id;}
+
     //Get the enum based on the id
-    public static Tokens valueOf(int id)
-    {
-        return map.get(id);
-    }
-    //return the number ID of the token
-    public int getID()
-    {
-        return this.id;
-    }
+    public static Tokens valueOf(int id) {return map.get(id);}
+
+    //return the ID of the token
+    public int getID() {return this.id;}
 }

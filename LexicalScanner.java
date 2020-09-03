@@ -1,16 +1,13 @@
 /*
     Project 1b
     Author: Shaan Arora, C3236359
-    Scanner Class
-        Main component of the lexical analyser that will use a DFA object to process each line of a file
-        Each line will be processed as a string and fed into the DFA object
-        The DFA object will return token/s which will be stored in a LinkedList from the standard Java library
+    LexicalScanner Class
+        Main component of the lexical analyser that uses a DFSM object to assist in generating tokens based on the file thats read in
+        The file read in is stored in a StringBuilder object and all tokens generated are stored in an ArrayList object
  */
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
+
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -45,32 +42,98 @@ public class LexicalScanner
     //Generates and return the next valid Token object
     //Preconditions: A1.scan.hasNextLine() == true
     //Postconditions: returns the next valid token as a Token object based on what A1.scan.next() returns
-    //TODO consider a look ahead function instead of constantly using this.input.charAt(i+1)
+    //TODO consider a look ahead function instead of constantly using this.lookUp(i+1)
+    //TODO grouping invalid chars and returning them as a single token instead of a token for each individual invalid char
     public Token getToken()
     {
         Token temp = new Token();
+        boolean invalid = false;
         StringBuilder lex = new StringBuilder();
+        //Check to see if we have a single or multi line comment
+        //if we dont have a single line comment, check for a multiline comment
+        if(!this.findSLComment())
+        {
+            //if we have a multiline comment then either this.pos will be the index of the char after / or the index of the eof char
+            this.findMLComment();
+        }
         for(int i = this.pos; i < this.input.length(); i++)
         {
-            char c = this.input.charAt(i);
+            char c = this.lookUp(i);
             //everytime we look at a char increment column number
             this.colNo++;
+            //TODO work out logic for isLetter and isDigit
             if(DFSM.isLetter(c))
             {
+                //TODO use cases, strings and identifiers which also handles keywords
                 lex.append(c);
-
                 this.pos = i;
             }
             else if(DFSM.isDigit(c))
             {
+                //TODO use cases - integer literals, float literals, as part of an identifier
                 //add the number to lex
                 lex.append(c);
                 this.pos = i;
             }
+            else if(DFSM.isDelim(c))
+            {
+                //generate a token for the delimeter
+                temp = this.machine.delimMachine(c,this.lineNo, this.colNo);
+                //update pos so its now at the index of the char after the delimeter
+                this.pos = i + 1;
+                //break so we can immedietaly return temp
+                break;
+            }
+            else if(DFSM.isOperator(c))
+            {
+                // %= doesnt exist
+                if(this.lookUp(i+1) == '=' && c != '%')
+                {
+                    //add the operator to lex
+                    lex.append(c);
+                    //the char after the operator is an = so add it to lex
+                    lex.append(this.lookUp(i+1));
+                    //generate composite operator machine
+                    temp = this.machine.compositeOpMachine(lex.toString(), this.lineNo, this.colNo);
+                }
+                else
+                {
+                    //char c is jus a single operator so generate a token for it
+                    temp = this.machine.operatorMachine(c,this.lineNo, this.colNo);
+                    //set pos to be the index of the char after the operator
+                    this.pos = i + 1;
+                }
+                //break so we can return temp
+                break;
+            }
+            else if (c == '_')
+            {
+                this.pos = i;
+                lex.append(c);
+                if(!DFSM.isLetter(this.lookUp(i+1)) || !DFSM.isDigit(this.lookUp(i+1)))
+                {
+                    //if the char after the underscore is not a letter or a digit then return a TUNDF token
+                    temp.setTokenID(62);
+                    temp.setLexeme(lex.toString());
+                    break;
+                }
+            }
+            else if(c == '!')
+            {
+                this.pos = i;
+                lex.append(c);
+                if(this.lookUp(i+1) == '=')
+                {
+                    lex.append(this.lookUp(i+1));
+                    temp = this.machine.compositeOpMachine(lex.toString(), this.lineNo, this.colNo);
+                }
+                else{temp = this.machine.errorMachine(lex.toString(), this.lineNo,this.colNo);}
+                break;
+            }
             else if(c == '"')
             {
                 //check to see what the char after the quotation mark is
-                if(this.input.charAt(i+1) == '\n')
+                if(this.lookUp(i+1) == '\n')
                 {
                     //add the quotation mark to lex if the char after it is the new line character
                     lex.append(c);
@@ -83,10 +146,10 @@ public class LexicalScanner
                     break;
                 }
                 //if we are looking at a " and the char after it is a " then add them to lex and return a TUNDF token
-                else if(this.input.charAt(i+1) == '"')
+                else if(this.lookUp(i+1) == '"')
                 {
                     lex.append(c);
-                    lex.append(this.input.charAt(i+1));
+                    lex.append(this.lookUp(i+1));
                     //plus +2 same logic as above
                     this.pos = i + 2;
                     temp.setTokenID(62);
@@ -94,38 +157,63 @@ public class LexicalScanner
                     //break so we can skip straight to the return statement
                     break;
                 }
+
                 this.pos = i;
             }
             else if (DFSM.isWhiteSpace(c))
             {
+                //any spaces or tabs we just add it to lex more important for cases such as string literals
                 if (c != '\n'){lex.append(c);}
                 else
                 {
                     //currently c is at index i so we want to skip it
                     this.pos = i+1;
+                    //we have reached a new line so update lineNo
                     this.lineNo++;
                     //this should act as returning when we see a newline character
                     break;
                 }
             }
+            else if(DFSM.isInvalid(c))
+            {
+                this.pos = i;
+                lex.append(c);
+                //if statement should allow for grouping of invalid chars such that we do not need to return a single token for each individual invalid char
+                //c is an invalid char so check to see if the char after is valid
+                if(!DFSM.isInvalid(this.lookUp(i+1)))
+                {
+                    temp.setTokenID(62);
+                    temp.setLexeme(lex.toString());
+                    //set pos to be the index of the valid char
+                    this.pos = i+1;
+                    //return a TUNDF token for all the invalid chars
+                    break;
+                }
+            }
             else if(c == '\u001a')
             {
+                //we have reached the end of the file
                 this.eof = true;
+                //set the token ID to be that of T_EOF
                 temp.setTokenID(0);
+                //break statement so we can immediately return the token
                 break;
             }
         }
+        //add the token we just generated
+        this.stream.add(temp);
         return temp;
     }
 
     //Returns the next valid token from a given source file
     //Preconditions: this.machine.isBufferEmpty() == true
     //Postconditions: returns the next valid token
-    public Token nextToken()
+    //TODO rework
+    /*public Token nextToken()
     {
         //Should return the next valid token, passing in an empty string because we do not want to add anything to our buffer
         return this.machine.baseMachine("", this.lineNo, this.colNo);
-    }
+    }*/
 
     //Print function to print a token
     //Preconditions: t != null
@@ -174,14 +262,14 @@ public class LexicalScanner
         for(int i = this.pos; i < this.input.length(); i++)
         {
             //capture the char at index i
-            char c = this.input.charAt(i);
+            char c = this.lookUp(i);
             if(c == '/')
             {
                 //if the char after the / is a -
-                if(this.input.charAt(i+1) == '-')
+                if(this.lookUp(i+1) == '-')
                 {
                     //look ahead again and see if we have a second dash
-                    if(this.input.charAt(i+2) == '-')
+                    if(this.lookUp(i+2) == '-')
                     {
                         comment = true;
                     }
@@ -200,28 +288,50 @@ public class LexicalScanner
     }
 
     //Searches this.input for a multiline comment
+    //Preconditions: readFile() has been called
+    //Postconditions: returns true if a multiline comment has been found and updates this.pos to point to be the index of the char after the end tag of the comment
     public boolean findMLComment()
     {
-        boolean comment = false;
+        boolean commentStart = false, commentEnd = false;
         for(int i = this.pos; i < this.input.length(); i++)
         {
-            char c = this.input.charAt(i);
+            char c = lookUp(i);
             if(c == '/')
             {
-                if(this.input.charAt(i+1) == '*')
+                if(this.lookUp(i+1) == '*')
                 {
-                    if(this.input.charAt(i+2) == '*')
+                    if(this.lookUp(i+2) == '*')
                     {
-                        comment = true;
+                        commentStart = true;
+                        //i + 3 because the char at is / , the char at i + 1 is * and the char at i + 2 is *
+                        this.pos = i + 3;
+                        break;
                     }
                 }
             }
-
         }
-        return comment;
+        //if comment is true, it should break and we end up here
+        while(this.lookUp(this.pos) != '*' && this.lookUp(this.pos) != '\u001a') {this.pos++;}
+        //we know the char at this.pos is a * or the end of file character because thats how we broke out of the while loop
+        //could refactor to switch case
+        if(this.lookUp(this.pos) == '*')
+        {
+            if(this.lookUp(this.pos+1) == '*')
+            {
+                if(this.lookUp(this.pos+2) == '/')
+                {
+                    commentEnd = true;
+                    //we know that the char at index this.pos is a * and at this.pos+1 is a * and at this.pos+2 is a / hence +=3
+                    //if the char at this.pos + 3 is a new line character then update pos to be the char after the new line character
+                    this.pos += this.lookUp(this.pos + 3) == '\n' ? 4 : 3;
+                }
+            }
+        }
+        else if(this.lookUp(this.pos) == '\u001a'){commentEnd = true;}
+        return (commentStart && commentEnd);
     }
     
-    //Determine if we have reached the end of a file
+    //Getter for eof, determnes if we have reached the end of a file
     //Postconditions: A1.scan has been declared and initialised
     //Postconditions: returns true if have reached the end of a file, otherwise false
     public boolean eof(){return this.eof;}
@@ -230,4 +340,14 @@ public class LexicalScanner
     //Preconditions: none
     //Preconditions: will return the ArrayList object which is acting as storage for all the tokens being generated
     public ArrayList<Token> getStream() {return this.stream;}
+
+    //Getter for the input so we can return the file we have read in as a StringBuilder object
+    //Preconditions: readFile() has been called thus input has been populate
+    //Postconditions: returns a StringBuilder object which contains the file read in by readFile()
+    public StringBuilder getInput() {return this.input;}
+
+    //Look ahead or look behind function
+    //Preconditions: readFile() has been called thus this.input has been populated
+    //Postconditions: returns the char at index it
+    private char lookUp(int i) {return this.input.charAt(i);}
 }

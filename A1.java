@@ -22,8 +22,10 @@ public class A1
             Token temp = lexical.getToken();
             lexical.printToken(temp);
         } while(!lexical.eof());*/
-        boolean test = lexical.findSLComment();
-        System.out.println(test);
+        boolean slTest = lexical.findSLComment();
+        boolean mlTest = lexical.findMLComment();
+        //har c = lexical.getCharAt();
+        System.out.printf("%b %b", slTest, mlTest);
         System.exit(0);
     }
 }
