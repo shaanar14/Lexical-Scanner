@@ -53,194 +53,192 @@ public class LexicalScanner
         if(!this.findSLComment())
         {
             //if we have a multiline comment then either this.pos will be the index of the char after / or the index of the eof char
-            if(!this.findMLComment())
+            this.findMLComment();
+        }
+        for(int i = this.pos; i < this.input.length(); i++)
+        {
+            char c = this.lookUp(i);
+            //everytime we look at a char increment column number
+            this.colNo++;
+            //if we have found a quotation mark then we keep adding any char except \n until we see another quotation mark
+            if(qmFound)
             {
-                for(int i = this.pos; i < this.input.length(); i++)
+                //if we have found a quotation mark but c is the new line character then thats a lexical error
+                if(c == '\n')
                 {
-                    char c = this.lookUp(i);
-                    //everytime we look at a char increment column number
-                    this.colNo++;
-                    //if we have found a quotation mark then we keep adding any char except \n until we see another quotation mark
-                    if(qmFound)
+                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    //update pos to be the index of the char after the new line character
+                    this.pos = i + 1;
+                    break;
+                }
+                //if the char after c is a quotation mark then generate a string literal token
+                if(this.lookUp(i+1) == '"')
+                {
+                    temp = machine.stringLiteral(lex, this.lineNo, this.colNo);
+                    //i+1 is another quotation mark so update pos to be the index of the char after it
+                    this.pos = i + 2;
+                    break;
+                }
+                //c can be anything in terms of a string literal
+                lex.append(c);
+                this.pos = i;
+            }
+            else if(Factory.isLetter(c))
+            {
+                lex.append(c);
+                this.pos = i;
+                if(!Factory.isDigit(this.lookUp(i+1)) && !Factory.isLetter(this.lookUp(i+1)))
+                {
+                    //if the char at i+1 is not a digit or a letter then generate a token
+                    //will either make temp an identifier or keyword token depending on lex
+                    temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                    //update pos to be the index of the char at i+1
+                    this.pos = i+ 1;
+                    break;
+                }
+            }
+            else if(Factory.isDigit(c))
+            {
+                //TODO use cases - integer literals, float literals, as part of an identifier
+                //add the number to lex
+                lex.append(c);
+                this.pos = i;
+                if(Factory.isLetter(this.lookUp(i-1)))
+                {
+                    //if the char before the digit is a letter
+                    identifier = true;
+                }
+            }
+            else if(Factory.isDelim(c))
+            {
+                //generate a token for the delimeter
+                temp = this.machine.delimToken(c, this.lineNo, this.colNo);
+                //update pos so its now at the index of the char after the delimeter
+                this.pos = i + 1;
+                //break so we can immedietaly return temp
+                break;
+            }
+            else if(Factory.isOperator(c))
+            {
+                // %= doesnt exist
+                if(this.lookUp(i+1) == '=' && c != '%')
+                {
+                    //add the operator to lex
+                    lex.append(c);
+                    //the char after the operator is an = so add it to lex
+                    lex.append(this.lookUp(i+1));
+                    //generate composite operator machine
+                    temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
+                }
+                else
+                {
+                    //char c is jus a single operator so generate a token for it
+                    temp = this.machine.operatorToken(c,this.lineNo, this.colNo);
+                    //set pos to be the index of the char after the operator
+                    this.pos = i + 1;
+                }
+                //break so we can return temp
+                break;
+            }
+            //Use case where _ is a valid start to an identifier
+            else if (c == '_')
+            {
+                //update pos to be the index of the _
+                this.pos = i;
+                lex.append(c);
+                if(!Factory.isLetter(this.lookUp(i+1)) || !Factory.isDigit(this.lookUp(i+1)))
+                {
+                    //if the char after the underscore is not a letter or a digit then return a TUNDF token
+                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    //update pos to be the index of the char at i+1
+                    this.pos += i+1;
+                    break;
+                }
+            }
+            else if(c == '"')
+            {
+                //check to see what the char after the quotation mark is
+                if(this.lookUp(i+1) == '\n')
+                {
+                    temp.setTokenID(62);
+                    temp.setLexeme(String.valueOf(c));
+                    //+2 because we are currently looking at char at i and we know char at i+1 is a whitespace so
+                    //update our position marker to the char after the whitespace
+                    this.pos = i + 2;
+                    //break so we can skip straight to the return statement
+                    break;
+                }
+                //if we are looking at a " and the char after it is a " then add them to lex and return a TUNDF token
+                else if(this.lookUp(i+1) == '"')
+                {
+                    lex.append(c);
+                    lex.append(this.lookUp(i+1));
+                    //plus +2 same logic as above
+                    this.pos = i + 2;
+                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    //break so we can skip straight to the return statement
+                    break;
+                }
+                //not appending the quotation mark to lex because for string literal tokens we do not want " included in the lexeme
+                qmFound = true;
+                //update pos to be the index of the char after the quotation marks
+                this.pos = i+1;
+            }
+            else if (Factory.isWhiteSpace(c))
+            {
+                //any spaces or tabs we just add it to lex more important for cases such as string literals
+                if (c != '\n'){lex.append(c);}
+                else
+                {
+                    //currently c is at index i so we want to skip it
+                    this.pos = i+1;
+                    //we have reached a new line so update lineNo
+                    this.lineNo++;
+                    if(identifier)
                     {
-                        //if we have found a quotation mark but c is the new line character then thats a lexical error
-                        if(c == '\n')
-                        {
-                            temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
-                            //update pos to be the index of the char after the new line character
-                            this.pos = i + 1;
-                            break;
-                        }
-                        //c can be anything in terms of a string literal
-                        lex.append(c);
-                        this.pos = i;
-                        //if the char after c is a quotation mark then generate a string literal token
-                        if(this.lookUp(i+1) == '"')
-                        {
-                            temp = machine.stringLiteral(lex, this.lineNo, this.colNo);
-                            //i+1 is another quotation mark so update pos to be the index of the char after it
-                            this.pos += i + 2;
-                            break;
-                        }
-                    }
-                    else if(Factory.isLetter(c))
-                    {
-                        lex.append(c);
-                        this.pos = i;
-                        if(!Factory.isDigit(this.lookUp(i+1)) && !Factory.isLetter(this.lookUp(i+1)))
-                        {
-                            //if the char at i+1 is not a digit or a letter then generate a token
-                            //will either make temp an identifier or keyword token depending on lex
-                            temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
-                            //update pos to be the index of the char at i+1
-                            this.pos = i+ 1;
-                            break;
-                        }
-                    }
-                    else if(Factory.isDigit(c))
-                    {
-                        //TODO use cases - integer literals, float literals, as part of an identifier
-                        //add the number to lex
-                        lex.append(c);
-                        this.pos = i;
-                        if(Factory.isLetter(this.lookUp(i-1)))
-                        {
-                            //if the char before the digit is a letter
-                            identifier = true;
-                        }
-                    }
-                    else if(Factory.isDelim(c))
-                    {
-                        //generate a token for the delimeter
-                        temp = this.machine.delimToken(c, this.lineNo, this.colNo);
-                        //update pos so its now at the index of the char after the delimeter
-                        this.pos = i + 1;
-                        //break so we can immedietaly return temp
-                        break;
-                    }
-                    else if(Factory.isOperator(c))
-                    {
-                        // %= doesnt exist
-                        if(this.lookUp(i+1) == '=' && c != '%')
-                        {
-                            //add the operator to lex
-                            lex.append(c);
-                            //the char after the operator is an = so add it to lex
-                            lex.append(this.lookUp(i+1));
-                            //generate composite operator machine
-                            temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
-                        }
-                        else
-                        {
-                            //char c is jus a single operator so generate a token for it
-                            temp = this.machine.operatorToken(c,this.lineNo, this.colNo);
-                            //set pos to be the index of the char after the operator
-                            this.pos = i + 1;
-                        }
-                        //break so we can return temp
-                        break;
-                    }
-                    //Use case where _ is a valid start to an identifier
-                    else if (c == '_')
-                    {
-                        //update pos to be the index of the _
-                        this.pos = i;
-                        lex.append(c);
-                        if(!Factory.isLetter(this.lookUp(i+1)) || !Factory.isDigit(this.lookUp(i+1)))
-                        {
-                            //if the char after the underscore is not a letter or a digit then return a TUNDF token
-                            temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
-                            //update pos to be the index of the char at i+1
-                            this.pos += i+1;
-                            break;
-                        }
-                    }
-                    else if(c == '"')
-                    {
-                        //check to see what the char after the quotation mark is
-                        if(this.lookUp(i+1) == '\n')
-                        {
-                            temp.setTokenID(62);
-                            temp.setLexeme(String.valueOf(c));
-                            //+2 because we are currently looking at char at i and we know char at i+1 is a whitespace so
-                            //update our position marker to the char after the whitespace
-                            this.pos = i + 2;
-                            //break so we can skip straight to the return statement
-                            break;
-                        }
-                        //if we are looking at a " and the char after it is a " then add them to lex and return a TUNDF token
-                        else if(this.lookUp(i+1) == '"')
-                        {
-                            lex.append(c);
-                            lex.append(this.lookUp(i+1));
-                            //plus +2 same logic as above
-                            this.pos = i + 2;
-                            temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
-                            //break so we can skip straight to the return statement
-                            break;
-                        }
-                        //not appending the quotation mark to lex because for string literal tokens we do not want " included in the lexeme
-                        qmFound = true;
-                        //update pos to be the index of the char after the quotation marks
-                        this.pos = i+1;
-                    }
-                    else if (Factory.isWhiteSpace(c))
-                    {
-                        //any spaces or tabs we just add it to lex more important for cases such as string literals
-                        if (c != '\n'){lex.append(c);}
-                        else
-                        {
-                            //currently c is at index i so we want to skip it
-                            this.pos = i+1;
-                            //we have reached a new line so update lineNo
-                            this.lineNo++;
-                            if(identifier)
-                            {
-                                temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
-                                break;
-                            }
-                        }
-                    }
-                    //TODO rework entire else if case
-                    else if(Factory.isInvalid(c))
-                    {
-                        //update pos to be the index of the invalid char
-                        this.pos = i;
-                        //append the invalid char to lex
-                        lex.append(c);
-                        //edge case where ! is only valid when a = follows it
-                        if(c == '!')
-                        {
-                            if(this.lookUp(i+1) == '=')
-                            {
-                                lex.append(this.lookUp(i + 1));
-                                temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
-                                break;
-                            }
-                        }
-                        //if statement should allow for grouping of invalid chars such that we do not need to return a single token for each individual invalid char
-                        //c is an invalid char so check to see if the char after is valid
-                        if(!Factory.isInvalid(this.lookUp(i+1)))
-                        {
-                            temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
-                            //set pos to be the index of the valid char
-                            this.pos = i+1;
-                            //return a TUNDF token for all the invalid chars
-                            break;
-                        }
-                    }
-                    else if(c == '\u001a')
-                    {
-                        //we have reached the end of the file
-                        this.eof = true;
-                        //complete reset on this.pos so know its the index of the start of this.input
-                        this.pos = 0;
-                        //set the token ID to be that of T_EOF
-                        temp = new Token(0, "", this.lineNo, this.colNo);
-                        //break statement so we can immediately return the token
+                        temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
                         break;
                     }
                 }
+            }
+            //TODO rework entire else if case
+            else if(Factory.isInvalid(c))
+            {
+                //update pos to be the index of the invalid char
+                this.pos = i;
+                //append the invalid char to lex
+                lex.append(c);
+                //edge case where ! is only valid when a = follows it
+                if(c == '!')
+                {
+                    if(this.lookUp(i+1) == '=')
+                    {
+                        lex.append(this.lookUp(i + 1));
+                        temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
+                        break;
+                    }
+                }
+                //if statement should allow for grouping of invalid chars such that we do not need to return a single token for each individual invalid char
+                //c is an invalid char so check to see if the char after is valid
+                if(!Factory.isInvalid(this.lookUp(i+1)))
+                {
+                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    //set pos to be the index of the valid char
+                    this.pos = i+1;
+                    //return a TUNDF token for all the invalid chars
+                    break;
+                }
+            }
+            else if(c == '\u001a')
+            {
+                //we have reached the end of the file
+                this.eof = true;
+                //complete reset on this.pos so know its the index of the start of this.input
+                this.pos = 0;
+                //set the token ID to be that of T_EOF
+                temp = new Token(0, "", this.lineNo, this.colNo);
+                //break statement so we can immediately return the token
+                break;
             }
         }
         //add the token we just generated
@@ -352,7 +350,7 @@ public class LexicalScanner
                     {
                         commentStart = true;
                         //i + 3 because the char at is / , the char at i + 1 is * and the char at i + 2 is *
-                        this.pos = i + 3;
+                        i += 3;
                         break;
                     }
                 }
@@ -376,11 +374,11 @@ public class LexicalScanner
                         commentEnd = true;
                         //we know that the char at index this.pos is a * and at this.pos+1 is a * and at this.pos+2 is a / hence +=3
                         //if the char at this.pos + 3 is a new line character then update pos to be the char after the new line character
-                        this.pos += this.lookUp(i + 3) == '\n' ? 4 : 3;
+                        this.pos += this.lookUp(i + 3) == '\n' ? i+4 : i+3;
                     }
                 }
             }
-            else if(this.lookUp(i) == '\u001a'){commentEnd = true;}
+            else if(this.lookUp(i) == '\u001a'){commentEnd = true; this.pos = i;}
         }
         return (commentStart && commentEnd);
     }

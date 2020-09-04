@@ -129,7 +129,7 @@ public class Token
             //if the token is a string literal token add back the quotation marks
             if(this.getTokenID() == 61)
             {
-                output += '"' + String.format("%1.6s", this.getLexeme()) + "\"";
+                output += String.format("\"%1.6s\" ", this.getLexeme());
             }
             else
             {
