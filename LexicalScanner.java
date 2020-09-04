@@ -42,11 +42,10 @@ public class LexicalScanner
     //Generates and return the next valid Token object
     //Preconditions: A1.scan.hasNextLine() == true
     //Postconditions: returns the next valid token as a Token object based on what A1.scan.next() returns
-    //TODO test function to see where for loop should go
     public Token getToken()
     {
         Token temp = new Token();
-        boolean floatFound = false, qmFound = false, identifier = false;
+        boolean floatFound = false, qmFound = false, identifier = false, integerFound = false;
         StringBuilder lex = new StringBuilder();
         //Check to see if we have a single or multi line comment
         //if we dont have a single line comment, check for a multiline comment
@@ -83,31 +82,33 @@ public class LexicalScanner
                 lex.append(c);
                 this.pos = i;
             }
-            else if(Factory.isLetter(c))
+            if(Factory.isLetter(c))
             {
                 lex.append(c);
                 this.pos = i;
-                if(!Factory.isDigit(this.lookUp(i+1)) && !Factory.isLetter(this.lookUp(i+1)))
+                if(!Factory.isDigit(this.lookUp(i+1)))
                 {
-                    //if the char at i+1 is not a digit or a letter then generate a token
-                    //will either make temp an identifier or keyword token depending on lex
-                    temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
-                    //update pos to be the index of the char at i+1
-                    this.pos = i+ 1;
-                    break;
+                    if(!Factory.isLetter(this.lookUp(i+1)))
+                    {
+                        temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                        this.pos = i + 1;
+                        break;
+                    }
                 }
             }
             else if(Factory.isDigit(c))
             {
-                //TODO use cases - integer literals, float literals, as part of an identifier
+                //TODO use cases - float literals
                 //add the number to lex
                 lex.append(c);
                 this.pos = i;
-                if(Factory.isLetter(this.lookUp(i-1)))
+                if(Factory.isLetter(this.lookUp(i+1)) && !identifier)
                 {
-                    //if the char before the digit is a letter
-                    identifier = true;
+                    temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);
+                    this.pos = i + 1;
+                    break;
                 }
+                integerFound = true;
             }
             else if(Factory.isDelim(c))
             {
@@ -129,6 +130,8 @@ public class LexicalScanner
                     lex.append(this.lookUp(i+1));
                     //generate composite operator machine
                     temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
+                    //update pos to be the index after =
+                    this.pos = i+2;
                 }
                 else
                 {
@@ -146,14 +149,18 @@ public class LexicalScanner
                 //update pos to be the index of the _
                 this.pos = i;
                 lex.append(c);
-                if(!Factory.isLetter(this.lookUp(i+1)) || !Factory.isDigit(this.lookUp(i+1)))
+                if(!Factory.isLetter(this.lookUp(i+1)))
                 {
-                    //if the char after the underscore is not a letter or a digit then return a TUNDF token
-                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
-                    //update pos to be the index of the char at i+1
-                    this.pos += i+1;
-                    break;
+                    if (!Factory.isDigit(this.lookUp(i + 1)))
+                    {
+                        //if the char after the underscore is not a letter or a digit then return a TUNDF token
+                        temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                        //update pos to be the index of the char at i+1
+                        this.pos = i + 1;
+                        break;
+                    }
                 }
+                identifier = true;
             }
             else if(c == '"')
             {
@@ -184,24 +191,6 @@ public class LexicalScanner
                 //update pos to be the index of the char after the quotation marks
                 this.pos = i+1;
             }
-            else if (Factory.isWhiteSpace(c))
-            {
-                //any spaces or tabs we just add it to lex more important for cases such as string literals
-                if (c != '\n'){lex.append(c);}
-                else
-                {
-                    //currently c is at index i so we want to skip it
-                    this.pos = i+1;
-                    //we have reached a new line so update lineNo
-                    this.lineNo++;
-                    if(identifier)
-                    {
-                        temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
-                        break;
-                    }
-                }
-            }
-            //TODO rework entire else if case
             else if(Factory.isInvalid(c))
             {
                 //update pos to be the index of the invalid char
@@ -226,6 +215,29 @@ public class LexicalScanner
                     //set pos to be the index of the valid char
                     this.pos = i+1;
                     //return a TUNDF token for all the invalid chars
+                    break;
+                }
+            }
+            else if (Factory.isWhiteSpace(c))
+            {
+                //skip any whitespaces we find
+                this.pos = i+1;
+                //we have reached a new line so update lineNo
+                if(c == '\n') {this.lineNo++;}
+                //returning tokens when we see a whitespace
+                if(identifier)
+                {
+                    temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                    break;
+                }
+                else if(integerFound)
+                {
+                    temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);
+                    break;
+                }
+                else if (floatFound)
+                {
+                    temp = machine.floatLiteral(lex, this.lineNo, this.colNo);
                     break;
                 }
             }
@@ -262,9 +274,9 @@ public class LexicalScanner
     //Postconditions: adds the Token object t to the output StringBuilder and prints output with formatting
     public void printToken(Token t)
     {
-        //if the size of this.stream is a multiple of 11 then wrap
+        //if the size of this.stream is a multiple of 10 then wrap, if 10 is not right then change to 11
         //this means that if a line of output is up to 60 characters, the next token is printed with its lexeme then wrapped
-        if(this.stream.size() % 11 == 0){System.out.print(t + "\n");}
+        if(this.stream.size() % 10 == 0){System.out.print(t + "\n");}
         else{System.out.print(t);}
     }
 
@@ -334,7 +346,7 @@ public class LexicalScanner
     //Searches this.input for a multiline comment
     //Preconditions: readFile() has been called
     //Postconditions: returns true if a multiline comment has been found and updates this.pos to point to be the index of the char after the end tag of the comment
-    //TODO test function again to see what the value of this.pos is when the function returns false
+    //could change to void
     public boolean findMLComment()
     {
         boolean commentStart = false, commentEnd = false;

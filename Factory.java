@@ -15,16 +15,12 @@ public class Factory
     public Token identifierToken(StringBuilder lex, int lineNo, int colNo)
     {
         Token t = new Token(lex.toString(), lineNo, colNo);
-        //whitespace, operator, delimeter or invalid char found so we can set the tokenID and lexeme and return that token
-        if(lex.charAt(0) != '_')
-        {
-            //after consuming chars, if the the first char in lex is not an _ then check to see if lex is a keyword
-            int id = this.keywordMatch(lex);
-            //if lex does match a keyword then set the ID for the keyword matched
-            if(id != -1){t.setTokenID(id);}
-            //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
-            else{t.setTokenID(58);}
-        }
+        //after consuming chars, if the the first char in lex is not an _ then check to see if lex is a keyword
+        int id = this.keywordMatch(lex);
+        //if lex does match a keyword then set the ID for the keyword matched
+        if(id != -1){t.setTokenID(id);}
+        //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
+        else{t.setTokenID(58);}
         return t;
     }
 
