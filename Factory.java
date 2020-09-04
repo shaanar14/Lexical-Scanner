@@ -112,6 +112,7 @@ public class Factory
     //Postconditions: a Token object is returned containing a token ID for a composite operator and its line & column number
     public Token compositeOpToken(String lex, int lineNo, int colNo)
     {
+        assert lex.length() == 2 : "paramter lex has to be of length 2";
         //we already know that the char at index 1 is a = so we just check to see what the operator at index 0 is
         //depending on what the first character of input is, set the ID of the Token object to its corresponding value and add that operator to lex
         switch(lex.charAt(0))
@@ -157,5 +158,5 @@ public class Factory
 
     //Preconditions: none
     //Postconditions: returns true if c is an invalid character otherwise false
-    public static boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!';}
+    public static boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!' || c == '!';}
 }

@@ -113,7 +113,11 @@ public class Token
         //This is to fix indexing and out of bounds issues since 55 doesnt exist in the enum
         if(this.getTokenID() >= 56)
         {
-            output = TPRINT[this.getTokenID() - 1];
+            if(this.getTokenID() == 62)
+            {
+                output = "\n" + TPRINT[this.getTokenID() - 1];
+            }
+            else{output = TPRINT[this.getTokenID() - 1];}
         }
         else
         {

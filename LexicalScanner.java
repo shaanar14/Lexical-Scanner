@@ -155,18 +155,6 @@ public class LexicalScanner
                             break;
                         }
                     }
-                    else if(c == '!')
-                    {
-                        this.pos = i;
-                        lex.append(c);
-                        if(this.lookUp(i+1) == '=')
-                        {
-                            lex.append(this.lookUp(i+1));
-                            temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
-                        }
-                        else{temp = this.machine.errorToken(lex.toString(), this.lineNo,this.colNo);}
-                        break;
-                    }
                     else if(c == '"')
                     {
                         //check to see what the char after the quotation mark is
@@ -213,11 +201,23 @@ public class LexicalScanner
                             }
                         }
                     }
-                    //TODO test this case
+                    //TODO rework entire else if case
                     else if(Factory.isInvalid(c))
                     {
+                        //update pos to be the index of the invalid char
                         this.pos = i;
+                        //append the invalid char to lex
                         lex.append(c);
+                        //edge case where ! is only valid when a = follows it
+                        if(c == '!')
+                        {
+                            if(this.lookUp(i+1) == '=')
+                            {
+                                lex.append(this.lookUp(i + 1));
+                                temp = this.machine.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
+                                break;
+                            }
+                        }
                         //if statement should allow for grouping of invalid chars such that we do not need to return a single token for each individual invalid char
                         //c is an invalid char so check to see if the char after is valid
                         if(!Factory.isInvalid(this.lookUp(i+1)))
