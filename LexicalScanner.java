@@ -21,7 +21,7 @@ public class LexicalScanner
     //Stores the entire file being read in and thus tokenized
     private final StringBuilder input;
     //One for holding the number of lines in a file, one for holding the column number and the other to mark which index we are currently up to in input
-    private int lineNo, colNo, pos;
+    private int lineNo, colNo, pos, count;
     //end of file marker
     private boolean eof;
 
@@ -36,6 +36,7 @@ public class LexicalScanner
         this.lineNo = 1;
         this.colNo = 0;
         this.pos = 0;
+        this.count = 0;
         this.eof = false;
     }
 
@@ -112,7 +113,7 @@ public class LexicalScanner
                 //add the number to lex
                 lex.append(c);
                 this.pos = i;
-                if(!Factory.isDigit(this.lookUp(i+1)))
+                if(!Factory.isDigit(this.lookUp(i+1)) && (this.lookUp(i+1) != '.'))
                 {
                     if(floatFound)
                     {
@@ -124,12 +125,6 @@ public class LexicalScanner
                     }
                     else {temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);}
                     this.pos = i+1;
-                    break;
-                }
-                if (this.lookUp(i + 1) == '.' && !Factory.isDigit(this.lookUp(i + 2)))
-                {
-                    temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);
-                    this.pos = i + 1;
                     break;
                 }
             }
@@ -345,9 +340,14 @@ public class LexicalScanner
     //Postconditions: adds the Token object t to the output StringBuilder and prints output with formatting
     public void printToken(Token t)
     {
+        //TODO change to using a count private member variable such that if
         //if the size of this.stream is a multiple of 10 then wrap, if 10 is not right then change to 11
         //this means that if a line of output is up to 60 characters, the next token is printed with its lexeme then wrapped
-        if(this.stream.size() % 10 == 0){System.out.print(t + "\n");}
+        /*if(this.stream.size() % 10 == 0){System.out.print(t + "\n");}
+        else{System.out.print(t);}*/
+        //if the Token object t has a lexeme
+        this.count += 1;
+        if(this.count == 9){System.out.print(t + "\n"); this.count = 0;}
         else{System.out.print(t);}
     }
 
@@ -379,7 +379,7 @@ public class LexicalScanner
     }
 
     //Searches this.input for a single line comment
-    //Preconditions: readFile() has been called
+    //Preconditions: readFile() has been called and this.getToken()
     //Postconditons: returns true if the line is a comment and updates this.pos accordingly, otherwise false
     public boolean findSLComment()
     {
@@ -418,7 +418,7 @@ public class LexicalScanner
     }
 
     //Searches this.input for a multiline comment
-    //Preconditions: readFile() has been called
+    //Preconditions: readFile() has been called and this.getToken()
     //Postconditions: returns true if a multiline comment has been found and updates this.pos to point to be the index of the char after the end tag of the comment
     //could change to void
     public boolean findMLComment()
@@ -470,12 +470,12 @@ public class LexicalScanner
     }
     
     //Getter for eof, determnes if we have reached the end of a file
-    //Postconditions: A1.scan has been declared and initialised
+    //Postconditions: this.readFile() and this.getToken() have been called
     //Postconditions: returns true if have reached the end of a file, otherwise false
     public boolean eof(){return this.eof;}
 
     //Getter for the entire stream of tokens generated
-    //Preconditions: none
+    //Preconditions: this.readFile() and this.getToken() have been called which means that some Token objects have been generated and stored
     //Preconditions: will return the ArrayList object which is acting as storage for all the tokens being generated
     public ArrayList<Token> getStream() {return this.stream;}
 
