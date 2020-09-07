@@ -146,7 +146,7 @@ public class Factory
 
     //Preconditions: none
     //Postconditions: return true if c is a delimeter otherwise false
-    public static boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ';' || c == ':';}
+    public static boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == ';' || c == ':' || c== ',';}
 
     //Preconditions: none
     //Postconditons: returns true if c is a whitespace character  otherwise false, the new line character is considered a whitespace

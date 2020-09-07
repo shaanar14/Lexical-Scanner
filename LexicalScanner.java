@@ -33,21 +33,22 @@ public class LexicalScanner
         this.machine = new Factory();
         this.stream = new ArrayList<>();
         this.input = new StringBuilder();
-        this.lineNo = 0;
+        this.lineNo = 1;
         this.colNo = 0;
         this.pos = 0;
         this.eof = false;
     }
 
     //Generates and return the next valid Token object
-    //Preconditions: A1.scan.hasNextLine() == true
+    //Preconditions: this.readFile() has been called
     //Postconditions: returns the next valid token as a Token object based on what A1.scan.next() returns
     public Token getToken()
     {
         Token temp = new Token();
-        boolean floatFound = false, qmFound = false, identifier = false, integerFound = false;
+        boolean floatFound = false, qmFound = false, identifier = false, integerFound = false, comment = false;
         StringBuilder lex = new StringBuilder();
         //Check to see if we have a single or multi line comment
+        //TODO move function calls or include the logic in the operator case for when we see a /
         //if we dont have a single line comment, check for a multiline comment
         if(!this.findSLComment())
         {
@@ -82,42 +83,78 @@ public class LexicalScanner
                 lex.append(c);
                 this.pos = i;
             }
-            if(Factory.isLetter(c))
+            //if we have successful seen the following chars /-- then we keep iterating until we see the \n character
+            if(comment)
+            {
+                if(c != '\n')
+                {
+                    this.pos = i;
+                }
+                else {this.pos = i+1; comment = false;}
+            }
+            else if(Factory.isLetter(c))
             {
                 lex.append(c);
                 this.pos = i;
-                if(!Factory.isDigit(this.lookUp(i+1)))
+                if(Factory.isDigit(this.lookUp(i+1)) || Factory.isLetter(this.lookUp(i+1)))
                 {
-                    if(!Factory.isLetter(this.lookUp(i+1)))
-                    {
-                        temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
-                        this.pos = i + 1;
-                        break;
-                    }
+                    identifier = true;
+                }
+                if(Factory.isWhiteSpace(this.lookUp(i+1)))
+                {
+                    temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                    this.pos = i + 2;
+                    break;
                 }
             }
             else if(Factory.isDigit(c))
             {
-                //TODO use cases - float literals
                 //add the number to lex
                 lex.append(c);
                 this.pos = i;
-                if(Factory.isLetter(this.lookUp(i+1)) && !identifier)
+                if(!Factory.isDigit(this.lookUp(i+1)))
+                {
+                    if(floatFound)
+                    {
+                        temp = this.machine.floatLiteral(lex, this.lineNo, this.colNo);
+                    }
+                    else if(identifier)
+                    {
+                        temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                    }
+                    else {temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);}
+                    this.pos = i+1;
+                    break;
+                }
+                if (this.lookUp(i + 1) == '.' && !Factory.isDigit(this.lookUp(i + 2)))
                 {
                     temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);
                     this.pos = i + 1;
                     break;
                 }
-                integerFound = true;
             }
-            else if(Factory.isDelim(c))
+            //TODO might have to remove / from isOperator() but this else if should take precedence over its case below
+            else if (c == '/')
             {
-                //generate a token for the delimeter
-                temp = this.machine.delimToken(c, this.lineNo, this.colNo);
-                //update pos so its now at the index of the char after the delimeter
-                this.pos = i + 1;
-                //break so we can immedietaly return temp
-                break;
+                if(this.lookUp(i+1) == '-')
+                {
+                    //look ahead again and see if we have a second dash
+                    if (this.lookUp(i + 2) == '-')
+                    {
+                        //if we have /--
+                        comment = true;
+                        //update pos to be the index of the char after /--
+                        this.pos = i + 3;
+                    }
+                }
+                else
+                {
+                    //the char after the / is not a - or the char after /- is not a - so just generate a token for the /
+                    temp = this.machine.operatorToken(c,this.lineNo, this.colNo);
+                    //set pos to be the index of the char after the operator
+                    this.pos = i + 1;
+                    break;
+                }
             }
             else if(Factory.isOperator(c))
             {
@@ -143,6 +180,43 @@ public class LexicalScanner
                 //break so we can return temp
                 break;
             }
+            else if(c == '.')
+            {
+                //if the position of the dot is not at 0, and if the char behind and after it is a digit
+                if(this.pos !=0 && (Factory.isDigit(this.lookUp(i-1)) && Factory.isDigit(this.lookUp(i+1))))
+                {
+                    floatFound = true;
+                    //if c is a dot and the char after it is a digit
+                    this.pos = i + 1;
+                    //add the dot to lex
+                    lex.append(c);
+                }
+                //if the char after the dot is not a digit then turn the dot into a token
+                else
+                {
+                    //generate a token for the delimeter
+                    temp = this.machine.delimToken(c, this.lineNo, this.colNo);
+                    //update pos so its now at the index of the char after the delimeter
+                    this.pos = i + 1;
+                    //break so we can immedietaly return temp
+                    break;
+                }
+            }
+            else if(Factory.isDelim(c))
+            {
+                if(identifier)
+                {
+                    temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
+                    this.pos = i;
+                    break;
+                }
+                //generate a token for the delimeter
+                temp = this.machine.delimToken(c, this.lineNo, this.colNo);
+                //update pos so its now at the index of the char after the delimeter
+                this.pos = i + 1;
+                //break so we can immedietaly return temp
+                break;
+            }
             //Use case where _ is a valid start to an identifier
             else if (c == '_')
             {
@@ -162,6 +236,7 @@ public class LexicalScanner
                 }
                 identifier = true;
             }
+            //string literal use case
             else if(c == '"')
             {
                 //check to see what the char after the quotation mark is
@@ -223,29 +298,29 @@ public class LexicalScanner
                 //skip any whitespaces we find
                 this.pos = i+1;
                 //we have reached a new line so update lineNo
-                if(c == '\n') {this.lineNo++;}
+                //maybe call findSLComment at the end of every new line
+                if(c == '\n')
+                {
+                    this.lineNo++;
+                }
                 //returning tokens when we see a whitespace
                 if(identifier)
                 {
                     temp = this.machine.identifierToken(lex, this.lineNo, this.colNo);
                     break;
                 }
-                else if(integerFound)
+                if(floatFound)
                 {
-                    temp = this.machine.integerLiteral(lex, this.lineNo, this.colNo);
-                    break;
-                }
-                else if (floatFound)
-                {
-                    temp = machine.floatLiteral(lex, this.lineNo, this.colNo);
+                    temp = this.machine.floatLiteral(lex, this.lineNo, this.colNo);
                     break;
                 }
             }
+            //end of file use case
             else if(c == '\u001a')
             {
                 //we have reached the end of the file
                 this.eof = true;
-                //complete reset on this.pos so know its the index of the start of this.input
+                //complete reset on this.pos so know its the index of the start of this.input, I think this will help with nextToken()
                 this.pos = 0;
                 //set the token ID to be that of T_EOF
                 temp = new Token(0, "", this.lineNo, this.colNo);
@@ -255,19 +330,15 @@ public class LexicalScanner
         }
         //add the token we just generated
         this.stream.add(temp);
+        //add to hash table here?
         //return the generated token
         return temp;
     }
 
     //Returns the next valid token from a given source file
-    //Preconditions: this.machine.isBufferEmpty() == true
+    //Preconditions: this.readFile() has been called
     //Postconditions: returns the next valid token
-    //TODO rework
-    /*public Token nextToken()
-    {
-        //Should return the next valid token, passing in an empty string because we do not want to add anything to our buffer
-        return this.machine.baseMachine("", this.lineNo, this.colNo);
-    }*/
+    public Token nextToken() {return this.getToken();}
 
     //Print function to print a token
     //Preconditions: t != null
@@ -331,11 +402,14 @@ public class LexicalScanner
             }
             //if comment is true
             //if the char we are currently looking at is the new line character and have confirm that the line is a comment then update pos
-            if(c == '\n' && comment)
+            if(c == '\n' || c == '\u001a')
             {
-                //update pos such that is the index of the char after the new line character only when we have found a comment
-                //the char at i + 1 will either be the eof marker if there is one line in the file or the char at the start of the next line
-                this.pos = i + 1;
+                if(comment)
+                {
+                    //update pos such that is the index of the char after the new line character only when we have found a comment
+                    //the char at i + 1 will either be the eof marker if there is one line in the file or the char at the start of the next line
+                    this.pos = i + 1;
+                }
                 break;
             }
         }

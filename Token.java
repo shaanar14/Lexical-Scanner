@@ -117,13 +117,14 @@ public class Token
             {
                 output = "\n" + TPRINT[this.getTokenID() - 1];
             }
-            else{output = TPRINT[this.getTokenID() - 1];}
+            else {output = TPRINT[this.getTokenID() - 1];}
         }
         else
         {
             output = TPRINT[this.getTokenID()];
         }
         //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
+        //as per assignment spec the second field is rounded up in length to the next multiple of 6 characters
         if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60 || this.getTokenID() == 61)
         {
             //if the token is a string literal token add back the quotation marks
