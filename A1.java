@@ -14,12 +14,17 @@ public class A1
         assert(args.length != 1) : "File name required";
         String fileName = args[0];
         LexicalScanner lexical = new LexicalScanner();
+        OutputController oc = new OutputController();
+        //takes a stringbuilder object and a Token arraylist
         lexical.readFile(fileName);
         do
         {
             Token temp = lexical.getToken();
             lexical.printToken(temp);
-        } while(!lexical.eof());
+        } while(!lexical.isEoF());
+        oc.setInput(lexical.getInput());
+        oc.setTokens(lexical.getStream());
+        oc.generateListingFile();
         System.exit(0);
     }
 }

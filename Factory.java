@@ -14,13 +14,13 @@ public class Factory
     //Postconditions: return a Token object for an identifier token, if lex matches a keyword then a Token object for that keyword is returned
     public Token identifierToken(StringBuilder lex, int lineNo, int colNo)
     {
-        Token t = new Token(lex.toString(), lineNo, colNo);
+        Token t = new Token("", lineNo, colNo);
         //after consuming chars, if the the first char in lex is not an _ then check to see if lex is a keyword
         int id = this.keywordMatch(lex);
         //if lex does match a keyword then set the ID for the keyword matched
         if(id != -1){t.setTokenID(id);}
-        //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier
-        else{t.setTokenID(58);}
+        //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier and set the lexeme
+        else{t.setTokenID(58); t.setLexeme(lex.toString());}
         return t;
     }
 
@@ -69,14 +69,14 @@ public class Factory
     {
         switch(c)
         {
-            case ',': return new Token(32, String.valueOf(c), lineNo, colNo);
-            case '[': return new Token(33, String.valueOf(c), lineNo, colNo);
-            case ']': return new Token(34, String.valueOf(c), lineNo, colNo);
-            case '(': return new Token(35, String.valueOf(c), lineNo, colNo);
-            case ')': return new Token(36, String.valueOf(c), lineNo, colNo);
-            case ':': return new Token(46, String.valueOf(c), lineNo, colNo);
-            case ';': return new Token(56, String.valueOf(c), lineNo, colNo);
-            case '.': return new Token(57, String.valueOf(c), lineNo, colNo);
+            case ',': return new Token(32, "", lineNo, colNo);
+            case '[': return new Token(33, "", lineNo, colNo);
+            case ']': return new Token(34, "", lineNo, colNo);
+            case '(': return new Token(35, "", lineNo, colNo);
+            case ')': return new Token(36, "", lineNo, colNo);
+            case ':': return new Token(46, "", lineNo, colNo);
+            case ';': return new Token(56, "", lineNo, colNo);
+            case '.': return new Token(57, "", lineNo, colNo);
             //default case being that we return a TUNDF token
             default:  return new Token(62, String.valueOf(c), lineNo, colNo);
         }
@@ -90,15 +90,15 @@ public class Factory
         //based on what c is, set the ID of the Token object to its corresponding value
         switch(c)
         {
-            case '=': return new Token(37, String.valueOf(c), lineNo, colNo);
-            case '+': return new Token(38, String.valueOf(c), lineNo, colNo);
-            case '-': return new Token(39, String.valueOf(c), lineNo, colNo);
-            case '*': return new Token(40, String.valueOf(c), lineNo, colNo);
-            case '/': return new Token(41, String.valueOf(c), lineNo, colNo);
-            case '%': return new Token(42, String.valueOf(c), lineNo, colNo);
-            case '^': return new Token(43, String.valueOf(c), lineNo, colNo);
-            case '<': return new Token(44, String.valueOf(c), lineNo, colNo);
-            case '>': return new Token(45, String.valueOf(c), lineNo, colNo);
+            case '=': return new Token(37, "", lineNo, colNo);
+            case '+': return new Token(38, "", lineNo, colNo);
+            case '-': return new Token(39, "", lineNo, colNo);
+            case '*': return new Token(40, "", lineNo, colNo);
+            case '/': return new Token(41, "", lineNo, colNo);
+            case '%': return new Token(42, "", lineNo, colNo);
+            case '^': return new Token(43, "", lineNo, colNo);
+            case '<': return new Token(44, "", lineNo, colNo);
+            case '>': return new Token(45, "", lineNo, colNo);
             //default case being that we return a TUNDF token
             default:  return new Token(62, String.valueOf(c), lineNo, colNo);
         }
@@ -114,16 +114,16 @@ public class Factory
         //depending on what the first character of input is, set the ID of the Token object to its corresponding value and add that operator to lex
         switch(lex.charAt(0))
         {
-            case '<': return new Token(47, lex, lineNo, colNo);
-            case '>': return new Token(48, lex, lineNo, colNo);
+            case '<': return new Token(47, "", lineNo, colNo);
+            case '>': return new Token(48, "", lineNo, colNo);
             //the only case where ! is accepted ever
-            case '!': return new Token(49, lex, lineNo, colNo);
-            case '=': return new Token(50, lex, lineNo, colNo);
-            case '+': return new Token(51, lex, lineNo, colNo);
-            case '-': return new Token(52, lex, lineNo, colNo);
-            case '*': return new Token(53, lex, lineNo, colNo);
-            case '/': return new Token(54, lex, lineNo, colNo);
-            default:  return new Token(62, lex, lineNo, colNo);
+            case '!': return new Token(49, "", lineNo, colNo);
+            case '=': return new Token(50, "", lineNo, colNo);
+            case '+': return new Token(51, "", lineNo, colNo);
+            case '-': return new Token(52, "", lineNo, colNo);
+            case '*': return new Token(53, "", lineNo, colNo);
+            case '/': return new Token(54, "", lineNo, colNo);
+            default:  return new Token(62, "", lineNo, colNo);
         }
     }
 

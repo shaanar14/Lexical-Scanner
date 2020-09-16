@@ -13,16 +13,16 @@ import java.util.Scanner;
 
 public class LexicalScanner
 {
-    //Private member variables
-    //One for DFSM object to handle processing and determining tokens
+    //Member variables
+    //Factory object to handle processing and generating Token objects
     private final Factory machine;
-    //Holds all generated tokens
+    //Storage for all generated Token objects
     private final ArrayList<Token> stream;
-    //Stores the entire file being read in and thus tokenized
+    //Stores the entire file being read in which will then be tokenized
     private final StringBuilder input;
-    //One for holding the number of lines in a file, one for holding the column number and the other to mark which index we are currently up to in input
+    //Stores the number of lines in a file, the column number and to mark which char we are currently up to when tokenizing the input StringBuilder
     private int lineNo, colNo, pos, count;
-    //end of file marker
+    //Marks if we have reach the end of the file
     private boolean eof;
 
     //Default constructor
@@ -340,20 +340,19 @@ public class LexicalScanner
     //Postconditions: adds the Token object t to the output StringBuilder and prints output with formatting
     public void printToken(Token t)
     {
-        //TODO change to using a count private member variable such that if
-        //if the size of this.stream is a multiple of 10 then wrap, if 10 is not right then change to 11
-        //this means that if a line of output is up to 60 characters, the next token is printed with its lexeme then wrapped
-        /*if(this.stream.size() % 10 == 0){System.out.print(t + "\n");}
-        else{System.out.print(t);}*/
-        //if the Token object t has a lexeme
-        this.count += 1;
-        if(this.count == 9){System.out.print(t + "\n"); this.count = 0;}
-        else{System.out.print(t);}
+        //the length of t.toString() is a multiple of six
+        this.count += t.toString().length();
+        if(this.count < 60) {System.out.print(t);}
+        else
+        {
+            System.out.println(t);
+            this.count = 0;
+        }
     }
 
     //Reads the entire file called fileName and stores all of it in a StringBuilder object with a special end of file character at the very end
     //Preconditions: fileName is a valid file in the directory and fileName != ""
-    //Postconditions: the entire file is read line by line with the new line character added at the end which is then stored in a StringBuilder object
+    //Postconditions: The entire file is read line by line with the new line character added at the end which is then stored in a StringBuilder object
     //                  for later use
     public void readFile(String fileName)
     {
@@ -380,7 +379,7 @@ public class LexicalScanner
 
     //Searches this.input for a single line comment
     //Preconditions: readFile() has been called and this.getToken()
-    //Postconditons: returns true if the line is a comment and updates this.pos accordingly, otherwise false
+    //Postconditons: Returns true if the line is a comment and updates this.pos accordingly, otherwise false
     public boolean findSLComment()
     {
         boolean comment = false;
@@ -417,10 +416,9 @@ public class LexicalScanner
         return comment;
     }
 
-    //Searches this.input for a multiline comment
+    //Searches input for this current LexicalScanner object for a multiline comment
     //Preconditions: readFile() has been called and this.getToken()
-    //Postconditions: returns true if a multiline comment has been found and updates this.pos to point to be the index of the char after the end tag of the comment
-    //could change to void
+    //Postconditions: Returns true if a multiline comment has been found and updates this.pos to point to be the index of the char after the end tag of the comment
     public boolean findMLComment()
     {
         boolean commentStart = false, commentEnd = false;
@@ -469,23 +467,24 @@ public class LexicalScanner
         return (commentStart && commentEnd);
     }
     
-    //Getter for eof, determnes if we have reached the end of a file
+    //Determnes if the current Dispatcher object has reached the end of the file it has read and tokenized
     //Postconditions: this.readFile() and this.getToken() have been called
     //Postconditions: returns true if have reached the end of a file, otherwise false
-    public boolean eof(){return this.eof;}
+    public boolean isEoF(){return this.eof;}
 
-    //Getter for the entire stream of tokens generated
-    //Preconditions: this.readFile() and this.getToken() have been called which means that some Token objects have been generated and stored
-    //Preconditions: will return the ArrayList object which is acting as storage for all the tokens being generated
+    //Getter for the entire stream of Token objects generated
+    //Preconditions: this.readFile() and this.getToken() have been called which means that at least one Token object has been generated and stored
+    //               this.stream.size() >= 1
+    //Preconditions: Returns an ArrayList of Token objects which is acting as storage for all the Token objects generated from a file that has been read
     public ArrayList<Token> getStream() {return this.stream;}
 
-    //Getter for the input so we can return the file we have read in as a StringBuilder object
+    //Getter for the input of the current Dispatcher object so we can return the file we have read in as a StringBuilder object
     //Preconditions: readFile() has been called thus input has been populate
-    //Postconditions: returns a StringBuilder object which contains the file read in by readFile()
+    //Postconditions: Returns a StringBuilder object which contains the file read in by readFile()
     public StringBuilder getInput() {return this.input;}
 
-    //Look ahead or look behind function
+    //Look ahead or look behind function for when we are trying to tokenize the file read in by the current Dispatcher object
     //Preconditions: readFile() has been called thus this.input has been populated
-    //Postconditions: returns the char at index it
+    //Postconditions: Returns the char at index i
     private char lookUp(int i) {return this.input.charAt(i);}
 }
