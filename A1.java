@@ -7,6 +7,8 @@
         Hopefully outputs all found tokens and all lexical errors
 */
 
+import java.math.BigInteger;
+
 public class A1
 {
     public static void main(String[] args)
@@ -14,7 +16,7 @@ public class A1
         assert(args.length != 1) : "File name required";
         String fileName = args[0];
         LexicalScanner lexical = new LexicalScanner();
-        OutputController oc = new OutputController();
+        //OutputController oc = new OutputController();
         //takes a stringbuilder object and a Token arraylist
         lexical.readFile(fileName);
         do
@@ -22,9 +24,6 @@ public class A1
             Token temp = lexical.getToken();
             lexical.printToken(temp);
         } while(!lexical.isEoF());
-        oc.setInput(lexical.getInput());
-        oc.setTokens(lexical.getStream());
-        oc.generateListingFile();
         System.exit(0);
     }
 }

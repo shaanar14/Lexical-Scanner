@@ -6,7 +6,7 @@
 */
 
 import java.lang.String;
-
+import java.math.RoundingMode;
 public class Token
 {
     //Member variables for a Token object
@@ -112,36 +112,40 @@ public class Token
     {
         String output = "";
         //This is to fix indexing and out of bounds issues since 55 doesnt exist in the enum
-        //could refactor this if else block into its own ternary operator but I don't personally like nested ternary operators
-        if(this.getTokenID() >= 56)
-        {
-            output = this.getTokenID() == 62 ? "\n" + TPRINT[this.getTokenID() - 1] : TPRINT[this.getTokenID() - 1];
-        }
-        else
-        {
-            output = TPRINT[this.getTokenID()];
-        }
+        output = this.getTokenID() >= 56 ? TPRINT[this.getTokenID() - 1] : TPRINT[this.getTokenID()];
         //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
         //as per assignment spec the second field is rounded up in length to the next multiple of 6 characters
         if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60 || this.getTokenID() == 61)
         {
+            //n will be the length of the lexeme
+            double n = this.getLexeme().length();
+            //double length = 0;
             //add padding if the size of the lexeme not 6
-            if(this.getLexeme().length() < 6 && this.getLexeme().length() != 5)
+            if(n < 6)
             {
                 while (this.getLexeme().length() != 5)
                 {
                     String lex = this.getLexeme() + " ";
                     this.setLexeme(lex);
                 }
+                //update n if padding was added above
+                n = this.getLexeme().length();
             }
-            //TODO possibly have to take modulo of 6 for the size of the lexeme
+            else if (n % 6 != 0)
+            {
+                //calculate the length such that we round up to the next multiple of 6 characters
+                //ceiling function of the length of the lexeme divided by 6 and then times that value by 6
+                //e.g. if n = 13 then length will be 18 which is the next multiple of 6 characters
+                n = ((Math.ceil(n/6)) * 6);
+            }
             //if the token is a string literal token add back the quotation marks
-            output += this.getTokenID() == 61 ? String.format("\"%1.6s\" ", this.getLexeme()) : String.format("%1.6s", this.getLexeme()) + " ";
+            output += this.getTokenID() == 61 ? String.format("\"%1." + (int) n + "s\" ", this.getLexeme()) : String.format("%1." + (int) n + "s", this.getLexeme()) + " ";
+
         }
         //if the token is TUNDF, TUNDF will print first then on a new line the lexeme for it then add the new line character
         else if(this.getTokenID() == 62)
         {
-            output += "\nlexical error " + this.getLexeme() + '\n';
+            output += "\nlexical error " + this.getLexeme();
         }
         return output;
     }

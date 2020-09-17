@@ -12,11 +12,11 @@ public class Factory
     //Generates and returns an identifier or keyword token
     //Preconditions: lex.length() != 0
     //Postconditions: return a Token object for an identifier token, if lex matches a keyword then a Token object for that keyword is returned
-    public Token identifierToken(StringBuilder lex, int lineNo, int colNo)
+    public static Token identifierToken(StringBuilder lex, int lineNo, int colNo)
     {
         Token t = new Token("", lineNo, colNo);
         //after consuming chars, if the the first char in lex is not an _ then check to see if lex is a keyword
-        int id = this.keywordMatch(lex);
+        int id = keywordMatch(lex);
         //if lex does match a keyword then set the ID for the keyword matched
         if(id != -1){t.setTokenID(id);}
         //if its not a keyword or the char at index 0 in lex is a _ then set the ID for an identifier and set the lexeme
@@ -28,7 +28,7 @@ public class Factory
     //Preconditions: lex.length() != 0
     //Postconditions: checks to see if lex is equal to a keyword and returns its ID otherwise returns -1
     //TODO might have to rework such that fi is tokenised as if
-    private int keywordMatch(StringBuilder lex)
+    private static int keywordMatch(StringBuilder lex)
     {
         for(Keywords k : Keywords.values())
         {
@@ -50,22 +50,22 @@ public class Factory
     //Generates integer literal tokens
     //Preconditions: lex.length() != 0
     //Postconditions: returns a integer literal Token object
-    public Token integerLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(59, lex.toString(), lineNo, colNo);}
+    public static Token integerLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(59, lex.toString(), lineNo, colNo);}
 
     //Generates float literal tokens
     //Preconditions: lex.length() != 0
     //Postconditions returns a float literal Token object
-    public Token floatLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(60, lex.toString(), lineNo, colNo);}
+    public static Token floatLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(60, lex.toString(), lineNo, colNo);}
 
     //Generates string literal tokes
     //PreconditonsL lex.length() != 0
     //Postconditions: returns a string literal Token object
-    public Token stringLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(61, lex.toString(), lineNo, colNo);}
+    public static Token stringLiteral(StringBuilder lex, int lineNo, int colNo) {return new Token(61, lex.toString(), lineNo, colNo);}
 
     //Generates a Token object based on what delimeter c is
     //Preconditions: isDelim(c) == true
     //Postconditions: returns a Token object containg the token ID for what delimeter c is and its line & column number
-    public Token delimToken(char c, int lineNo, int colNo)
+    public static Token delimToken(char c, int lineNo, int colNo)
     {
         switch(c)
         {
@@ -85,7 +85,7 @@ public class Factory
     //Generates a Token object based on what operator c is
     //Preconditions: isOperator(c) == true
     //Postconditions: returns a Token object containg the token ID for what kind of operator c is and its line & column number
-    public Token operatorToken(char c, int lineNo, int colNo)
+    public static Token operatorToken(char c, int lineNo, int colNo)
     {
         //based on what c is, set the ID of the Token object to its corresponding value
         switch(c)
@@ -107,7 +107,7 @@ public class Factory
     //Generates a Token object based on what kind of operator c is
     //Preconditions: lex.length() == 2 and lex.charAt(1) == '='
     //Postconditions: a Token object is returned containing a token ID for a composite operator and its line & column number
-    public Token compositeOpToken(String lex, int lineNo, int colNo)
+    public static Token compositeOpToken(String lex, int lineNo, int colNo)
     {
         assert lex.length() == 2 : "paramter lex has to be of length 2";
         //we already know that the char at index 1 is a = so we just check to see what the operator at index 0 is
@@ -130,7 +130,7 @@ public class Factory
     //Generates a Token object which means lex is a lexical error in regards to our scanner
     //Preconditions: lex.length() != 0
     //Postconditions: returns a Token object with the ID for TUNDF and its line & column number
-    public Token errorToken(String lex, int lineNo, int colNo) {return new Token(62, lex, lineNo, colNo);}
+    public static Token errorToken(String lex, int lineNo, int colNo) {return new Token(62, lex, lineNo, colNo);}
 
     //Helper functions to determine what kind of char c is, changed to be static so LexicalScanner.java can access them
     //Preconditions: none
@@ -147,7 +147,7 @@ public class Factory
 
     //Preconditions: none
     //Postconditions: return true if c is a delimeter otherwise false
-    public static boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == ';' || c == ':' || c== ',';}
+    public static boolean isDelim(char c) {return c == '(' || c == ')' || c == '[' || c == ']' || c == ';' || c == ':' || c == ',' || c == '.';}
 
     //Preconditions: none
     //Postconditons: returns true if c is a whitespace character  otherwise false, the new line character is considered a whitespace
@@ -155,5 +155,6 @@ public class Factory
 
     //Preconditions: none
     //Postconditions: returns true if c is an invalid character otherwise false
-    public static boolean isInvalid(char c) {return c == '@' || c == '?' || c == '#' || c == '!' || c == '!';}
+    public static boolean isInvalid(char c)
+    {return c == '@' || c == '?' || c == '#' || c == '$' || c == '!' || c == '`' || c == '~';}
 }
