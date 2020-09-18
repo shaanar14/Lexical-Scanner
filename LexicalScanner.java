@@ -71,29 +71,30 @@ public class LexicalScanner
             else if(mlComment)
             {
                 char c = this.lookUp(i);
-                while(c != '*')
+                while(c != '\u001a')
                 {
-                    //reached end of file character
-                    if(c == '\u001a')
+                    //reached the start of the end tag for the comment
+                    if(c == '*')
                     {
-                        this.pos = i;
-                        this.colNo++;
-                        mlComment = false;
-                        break;
+                        if(this.lookUp(i+1) == '*')
+                        {
+                            if(this.lookUp(i+2) == '/')
+                            {
+                                i += 3;
+                                this.pos = i;
+                                //+3 because have seen three chars
+                                this.colNo += 3;
+                                mlComment = false;
+                                //might need to change this because we just want to break out of the while loop
+                                break;
+                            }
+                        }
+
                     }
                     if(c == '\n') {this.lineNo++;}
                     i++;
                     this.colNo++;
                     c = this.lookUp(i);
-                }
-                if(this.lookUp(i+1) == '*')
-                {
-                    if(this.lookUp(i+2) == '/')
-                    {
-                        this.pos = i + 3;
-                        i += 3;
-                        mlComment = false;
-                    }
                 }
             }
             char c = this.lookUp(i);
@@ -259,6 +260,7 @@ public class LexicalScanner
                         mlComment = true;
                         //+3 because we want the position marker to be at the index of the char after the /**
                         this.pos = i + 3;
+                        i += 3;
                     }
                     else
                     {
@@ -379,8 +381,8 @@ public class LexicalScanner
                     this.pos = i + 2;
                     break;
                 }
-                //if the char after the ! is a valid char then just generate an error token for !
-                if(!Factory.isInvalid(this.lookUp(i+1)))
+                //if the char after the ! is a valid char then just generate an error token for ! and any invalid chars before it
+                if(!Factory.isInvalid(this.lookUp(i+1)) || (this.lookUp(i+1) == '!'))
                 {
                     temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
                     //set pos to be the index of the valid char
