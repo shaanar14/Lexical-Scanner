@@ -8,7 +8,6 @@
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -21,6 +20,7 @@ public class LexicalScanner
     private final StringBuilder input;
     //Stores the number of lines in a file, the column number and to mark which char we are currently up to when tokenizing the input StringBuilder
     //  count is used for keep tracking of how many characters are currently in an output line
+    //  colNo is reset back to 0 every time a new line character in input is found
     private int lineNo, colNo, pos, count;
     //Marks if we have reach the end of the file
     private boolean eof;
@@ -34,7 +34,7 @@ public class LexicalScanner
         this.input = new StringBuilder();
         //Starting line number at 1
         this.lineNo = 1;
-        this.colNo = 0;
+        this.colNo = 1;
         this.pos = 0;
         this.count = 0;
         this.eof = false;
@@ -63,6 +63,8 @@ public class LexicalScanner
                 //+1 because we want the char after the new line character
                 this.pos = i + 1;
                 i += 1;
+                //reached new line character so reset colNo
+                this.colNo = 0;
                 //c == new line character so increment line number
                 this.lineNo++;
                 slComment = false;
@@ -91,7 +93,8 @@ public class LexicalScanner
                         }
 
                     }
-                    if(c == '\n') {this.lineNo++;}
+                    //if we see the new line character then increment lineNo and reset colNo
+                    if(c == '\n') {this.lineNo++; this.colNo = 0;}
                     i++;
                     this.colNo++;
                     c = this.lookUp(i);
@@ -116,7 +119,7 @@ public class LexicalScanner
                     //reassign c
                     c = this.lookUp(count);
                     //update column number
-                    this.colNo++;
+                    //this.colNo++;
                 }
                 if(c == '\n')
                 {
@@ -125,6 +128,8 @@ public class LexicalScanner
                     this.pos = count + 1;
                     //we have seen a new line character so update line number and column number;
                     this.lineNo++;
+                    //reset column number on when we see a new line character
+                    this.colNo = 0;
                     //break statement so we can add temp to the ArrayList acting as storage and return the token
                 }
                 //if c is at index count is a quotation mark that means we have seen a full string literal
@@ -134,7 +139,7 @@ public class LexicalScanner
                     this.pos = count + 1;
                 }
                 //Update column number
-                this.colNo++;
+                //this.colNo++;
                 //break statement so we can add temp to the ArrayList acting as storage and return the token
                 break;
             }
@@ -151,11 +156,11 @@ public class LexicalScanner
                     //reassign c
                     c = this.lookUp(count);
                     //update column number
-                    this.colNo++;
+                    //this.colNo++;
                 }
                 temp = Factory.identifierToken(lex, this.lineNo, this.colNo);
                 this.pos = count;
-                this.colNo++;
+                //this.colNo++;
                 break;
             }
             //Specific case if we have found the pattern digit dot digit
@@ -167,12 +172,12 @@ public class LexicalScanner
                 {
                     lex.append(c);
                     count++;
-                    this.colNo++;
+                    //this.colNo++;
                     c = this.lookUp(count);
                 }
                 temp = Factory.floatLiteral(lex, this.lineNo, this.colNo);
                 this.pos = count;
-                this.colNo++;
+                //this.colNo++;
                 break;
             }
             //Identifier and Keywords use case
@@ -241,6 +246,8 @@ public class LexicalScanner
                         //update pos to be the index of the char after /--
                         //might change this to +4
                         this.pos = i + 3;
+                        //colNo is the colum number of the / so add two so we are at the column number of the second -
+                        this.colNo += 2;
                     }
                     //we have seen /- which is not a valid start for a single line comment so we just tokenise the / and - seperately
                     else
@@ -260,6 +267,7 @@ public class LexicalScanner
                         mlComment = true;
                         //+3 because we want the position marker to be at the index of the char after the /**
                         this.pos = i + 3;
+                        this.colNo += 2;
                         i += 3;
                     }
                     else
@@ -281,6 +289,8 @@ public class LexicalScanner
                     temp = Factory.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
                     //update pos to be the index of the char after the /=
                     this.pos = i + 2;
+                    //update colNo to be the column number of the = which is after the /
+                    this.colNo++;
                     break;
                 }
                 //if we have not found /-- or /** then we treat the / as an operator and generate a token
@@ -309,6 +319,8 @@ public class LexicalScanner
                     temp = Factory.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
                     //update pos to be the index after =
                     this.pos = i+2;
+                    //update colNo to be the colum number of = which is after the operator
+                    this.colNo++;
                 }
                 else
                 {
@@ -341,7 +353,8 @@ public class LexicalScanner
                     if (!Factory.isDigit(this.lookUp(i + 1)))
                     {
                         //if the char after the underscore is not a letter or a digit then return a TUNDF token
-                        temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                        temp = Factory.errorToken(lex.toString(), this.lineNo, this.colNo);
+                        //temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
                         //update pos to be the index of the char at i+1
                         this.pos = i + 1;
                         break;
@@ -352,14 +365,12 @@ public class LexicalScanner
             //String literal use case
             else if(c == '"')
             {
-                //check to see what the char after the quotation mark is
+                //if the char after the quotation mark is the new line character then thats not valid
                 if(this.lookUp(i+1) == '\n')
                 {
-                    temp.setTokenID(62);
-                    temp.setLexeme(String.valueOf(c));
-                    //+2 because we are currently looking at char at i and we know char at i+1 is a whitespace so
-                    //update our position marker to the char after the whitespace
-                    this.pos = i + 2;
+                    temp = Factory.errorToken(String.valueOf(c), this.lineNo, this.colNo);
+                    //update pos to the be the index of the new line character which is after the "
+                    this.pos = i + 1;
                     //break so we can skip straight to the return statement
                     break;
                 }
@@ -377,14 +388,17 @@ public class LexicalScanner
                     //if the char after the ! is a = then that is a valid composite error so generate a token for it
                     lex.append(this.lookUp(i + 1));
                     temp = Factory.compositeOpToken(lex.toString(), this.lineNo, this.colNo);
-                    //update pos to be the index of the char after the = in !=
+                    //update pos to be the index of the char after the !=
                     this.pos = i + 2;
+                    //update colNo to be the column number of the char after the !=
+                    this.colNo += 2;
                     break;
                 }
                 //if the char after the ! is a valid char then just generate an error token for ! and any invalid chars before it
                 if(!Factory.isInvalid(this.lookUp(i+1)) || (this.lookUp(i+1) == '!'))
                 {
-                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    temp = Factory.errorToken(lex.toString(), this.lineNo, this.colNo);
+                    //temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
                     //set pos to be the index of the valid char
                     this.pos = i+1;
                     //return a TUNDF token for all the invalid chars
@@ -419,18 +433,20 @@ public class LexicalScanner
                 if(c == '\n')
                 {
                     this.lineNo++;
+                    //reset column number for the new line
+                    this.colNo = 0;
                 }
-                //returning tokens when we see a whitespace
             }
             //End of file use case since I added a special character to mark the end of the file
             else if(c == '\u001a')
             {
                 //we have reached the end of the file
                 this.eof = true;
-                //complete reset on this.pos so know its the index of the start of this.input, I think this will help with nextToken()
-                this.pos = 0;
                 //set the token ID to be that of T_EOF
                 temp = new Token(0, "", this.lineNo, this.colNo);
+                //we are at the end of the file so we reset the counters
+                //this should help if we need to go back to the beginning of the file and regenerate tokens
+                this.pos = 0; this.lineNo = 0; this.colNo = 0;
                 //break statement so we can immediately return the token
                 break;
             }
@@ -516,4 +532,6 @@ public class LexicalScanner
     //Preconditions: LexicalScanner object has been declared and initalized readFile() has been called thus input has been populated
     //Postconditions: Returns a StringBuilder object which contains the file read in by readFile()
     public StringBuilder getInput() {return this.input;}
+
+    public int getLineNo() {return this.lineNo;}
 }

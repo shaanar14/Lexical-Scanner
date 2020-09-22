@@ -115,11 +115,10 @@ public class Token
         output = this.getTokenID() >= 56 ? TPRINT[this.getTokenID() - 1] : TPRINT[this.getTokenID()];
         //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
         //as per assignment spec the second field is rounded up in length to the next multiple of 6 characters
-        if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60 || this.getTokenID() == 61)
+        if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60)
         {
             //n will be the length of the lexeme
             double n = this.getLexeme().length();
-            //double length = 0;
             //add padding if the size of the lexeme not 6
             if(n < 6)
             {
@@ -133,14 +132,23 @@ public class Token
             }
             else if (n % 6 != 0)
             {
-                //calculate the length such that we round up to the next multiple of 6 characters
                 //ceiling function of the length of the lexeme divided by 6 and then times that value by 6
-                //e.g. if n = 13 then length will be 18 which is the next multiple of 6 characters
+                //e.g. if n = 13 then this will be rounded up ot 18 which is the next multiple of 6 characters
                 n = ((Math.ceil(n/6)) * 6);
+                while(this.getLexeme().length() != (n -1))
+                {
+                    String lex = this.getLexeme() + " ";
+                    this.setLexeme(lex);
+                }
             }
+            n = this.getLexeme().length();
             //if the token is a string literal token add back the quotation marks
-            output += this.getTokenID() == 61 ? String.format("\"%1." + (int) n + "s\" ", this.getLexeme()) : String.format("%1." + (int) n + "s", this.getLexeme()) + " ";
+            output += String.format("%." + (int) n + "s", this.getLexeme()) + " ";
 
+        }
+        else if(this.getTokenID() == 61)
+        {
+            output += String.format("\"%s\" ", this.getLexeme());
         }
         //if the token is TUNDF, TUNDF will print first then on a new line the lexeme for it then add the new line character
         else if(this.getTokenID() == 62)
