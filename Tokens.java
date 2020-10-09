@@ -57,6 +57,9 @@ enum Tokens
     //Get the enum based on the id
     public static Tokens valueOf(int id) {return map.get(id);}
 
+    //Returns the enum of the current Tokens enum
+    public Tokens label() {return map.get(this.getID());}
+
     //return the ID of the token
     public int getID() {return this.id;}
 }

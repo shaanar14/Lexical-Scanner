@@ -1,5 +1,5 @@
 /*
-    Project 1b
+    Project 2
     Author: Shaan Arora, C3236359
     LexicalScanner Class
         Main component of the lexical analyser that uses a DFSM object to assist in generating tokens based on the file thats read in
@@ -15,15 +15,16 @@ public class LexicalScanner
 {
     //Member variables
     //Storage for all generated Token objects
-    private final ArrayList<Token> stream;
+    private ArrayList<Token> stream;
     //Stores the entire file being read in which will then be tokenized
-    private final StringBuilder input;
+    private  StringBuilder input;
     //Stores the number of lines in a file, the column number and to mark which char we are currently up to when tokenizing the input StringBuilder
     //  count is used for keep tracking of how many characters are currently in an output line
     //  colNo is reset back to 0 every time a new line character in input is found
     private int lineNo, colNo, pos, count;
     //Marks if we have reach the end of the file
     private boolean eof;
+    private OutputController output;
 
     //Default constructor
     //Preconditions: None
@@ -38,6 +39,7 @@ public class LexicalScanner
         this.pos = 0;
         this.count = 0;
         this.eof = false;
+        this.output = new OutputController();
     }
 
     //Generates and return the next valid Token object from input file read
@@ -451,8 +453,11 @@ public class LexicalScanner
                 break;
             }
         }
-        //Add the Token object thats been generated to the ArrayList object acting as storage
+        //Add the Token object regardless of type thats been generated to the ArrayList object acting as storage
+        // safety net in a way
         this.stream.add(temp);
+        //add to symbol table?
+        A2.st.put(temp);
         //add to hash table here?
         //Return the generated Token object so we can output it
         return temp;
@@ -513,25 +518,108 @@ public class LexicalScanner
         }
     }
 
-    //Determines if the current LexicalScanner object has reached the end of a file when it is going through input and generating Token objects
-    //Postconditions: LexicalScanenr object is declared and intialized, readFile() and  getToken() have been called
-    //Postconditions: Returns true if we have reach the end of file character during tokenization in getToken()
-    public boolean isEoF(){return this.eof;}
-
     //Look ahead or look behind function for when we are trying to tokenize the file read in by the current LexicalScanner object
     //Preconditions: readFile() has been called thus this.input has been populated
     //Postconditions: Returns the char at index i
     private char lookUp(int i) {return this.input.charAt(i);}
 
-    //Getter for the entire object that is storing the Token objects generated
+    //Preconditions: current LexicalScanner object has been declared & initialized, readFile() and getToken() also need to be called
+    //Postconditions: Output the current LexicalScanner object to the terminal in the format specified in the assignment specs
+    public void output() {this.output.outputLexicalScanner(this);}
+
+    public void sendInput() {this.output.setInput(this.getInput());}
+
+    public void generateListing(String fileName) {this.output.generateListingFile(fileName);}
+
+    //Setters
+
+    //Preconditions: s.size() != 0
+    //Postconditions: Assigns s to the private member stream
+    public void setStream(ArrayList<Token> s)
+    {
+        assert s.size() != 0 : "Parameter list needs to contain some Token objects";
+        this.stream = s;
+    }
+
+    //Preconditions: i.length != 0
+    //Postconditions: Assigns i to the private member input
+    public void setInput(StringBuilder i)
+    {
+        assert i.length() != 0 : "Parameter StringBuilder length must be greater than 0";
+        this.input = i;
+    }
+
+    //Preconditions: None
+    //Postconditions: Assigns lineNo to the private member lineNo
+    public void setLineNo(int lineNo) {this.lineNo = lineNo;}
+
+    //Preconditions: None
+    //Postconditions: Assigns lineNo to the private member colNo
+    public void setColNo(int colNo) {this.colNo = colNo;}
+
+    //Preconditions: None
+    //Postconditions: Assigns lineNo to the private member pos
+    public void setPos(int p) {this.pos = p;}
+
+    //Preconditions: None
+    //Postconditions: Assigns lineNo to the private member count
+    public void setCount(int count) {this.count = count;}
+
+    //Preconditions: None
+    //Postconditions: Assigns lineNo to the private member eof
+    public void setEof(boolean e) {this.eof = e;}
+
+    //Preconditions: oc has been declared and intialized
+    //Postconditions: Assigns oc to the private member output
+    public void setOutput(OutputController oc)
+    {
+        assert oc != null : "Object passed in needs to be properly intialized";
+        this.output = oc;
+    }
+
+    //Getters
+
     //Preconditions: LexicalScanner object has been declared and intialized, readFile() and getToken() have been called such that stream.size() >= 1
     //Preconditions: Returns an ArrayList of Token objects which is acting as storage for all the Token objects generated from a file that has been read
-    public ArrayList<Token> getStream() {return this.stream;}
+    public ArrayList<Token> getStream()
+    {
+        assert this.stream.size() != 0 : "No Token objects currently stored";
+        return this.stream;
+    }
 
-    //Getter for the input of the current LexicalScanner object so we can return the file we have read in as a StringBuilder object
     //Preconditions: LexicalScanner object has been declared and initalized readFile() has been called thus input has been populated
     //Postconditions: Returns a StringBuilder object which contains the file read in by readFile()
-    public StringBuilder getInput() {return this.input;}
+    public StringBuilder getInput()
+    {
+        assert this.input.length() != 0 : "readFile() has to be called";
+        return this.input;
+    }
 
+    //Preconditions: None
+    //Postconditions: Returns the number of lines in given CD20 source code file
     public int getLineNo() {return this.lineNo;}
+
+    //Preconditions: None
+    //Postconditions: returns the column number of a char in input
+    public int getColNo() {return this.colNo;}
+
+    //Preconditions: None
+    //Postconditions: Returns the index of the char we are up to in input
+    public int getPos() {return this.pos;}
+
+    //Preconditions: None
+    //Postconditions: Returns the the number characters in an output line
+    public int getCount() {return this.count;}
+
+    //Postconditions: LexicalScanner object is declared and intialized, readFile() and  getToken() have been called
+    //Postconditions: Returns true if we have reach the end of file character during tokenization in getToken()
+    public boolean isEoF(){return this.eof;}
+
+    //Preconditions: output has been declared and initalized
+    //Postconditions: Returns the OutputController object for the current LexicalScanner object
+    public OutputController getOutput()
+    {
+        assert this.output != null : "The OutputController object is null";
+        return this.output;
+    }
 }
