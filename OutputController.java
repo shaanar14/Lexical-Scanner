@@ -1,5 +1,5 @@
 /*
-    COMP3290 Project
+    COMP3290 Project 2
     Author: Shaan Arora, C3236359
     OutputController Class
         Contains all functionality to create a listing file, generate the output for all structures of the compiler and report errors
@@ -25,6 +25,7 @@ public class OutputController
     private StringBuilder msgSyntaxErrors;
     //Stores all STNode objects that are considered syntax errors
     private ArrayList<STNode> nodeSyntaxErrors;
+    private int syntaxOutputCount;
 
     //Default Constructor
     public OutputController()
@@ -35,6 +36,7 @@ public class OutputController
         this.lexicalErrors = new ArrayList<>();
         this.msgSyntaxErrors = new StringBuilder();
         this.nodeSyntaxErrors = new ArrayList<>();
+        this.syntaxOutputCount = 0;
     }
 
     //Preconditions: LexicalScanner & OutputController object have been declared and initialized.
@@ -140,14 +142,39 @@ public class OutputController
     //Postconditions: Outputs the LexicalScanner object passed in to the terminal as per the specs of assignment 1
     public void outputLexicalScanner(LexicalScanner ls)
     {
-        //make sure that the LexicalScanner object has read a source code file
-        assert ls.getInput().length() != 0 : "Make sure that you have you called readFile()";
+        //Enforce preconditions
+        assert ls != null : "Make sure that the LexicalScanner object passed in has been declared and initalized";
+        assert ls.getInput().length() != 0 : "Make sure that readFile() has been called on the LexicalScanner object passed in";
         do
         {
             Token temp = ls.nextToken();
             ls.printToken(temp);
             //if(temp.getTokenID() == 62) this.lexicalErrors.add(temp);
         } while(!ls.isEoF());
+    }
+
+    public void outputSyntaxTree(SyntaxTree st)
+    {
+        STNode temp = st.getRoot();
+        this.preorderTraversal(temp);
+    }
+
+
+    //Preorder traversal of the Abstract Syntax tree for the output
+    public void preorderTraversal(STNode node)
+    {
+        if(node == null){return;}
+        this.syntaxOutputCount = node.toString().length();
+        if(this.syntaxOutputCount <= 70) System.out.print(node);
+        else
+        {
+            System.out.print(node);
+            System.out.print('\n');
+            this.syntaxOutputCount = 0;
+        }
+        preorderTraversal(node.getLeftChild());
+        if(node.getMiddleChild() != null) {preorderTraversal(node.getMiddleChild());}
+        preorderTraversal(node.getRightChild());
     }
 
     public void addValidToken(Token t) {this.tokenStream.add(t);}
@@ -157,30 +184,9 @@ public class OutputController
     public void addLexicalError(Token e) {this.lexicalErrors.add(e);}
 
     //Possibly have a secondary funciton passing in a STNode object
-    public void addSyntaxError(String s)
-    {
-        this.msgSyntaxErrors.append(s);
-    }
+    public void addSyntaxError(String s) {this.msgSyntaxErrors.append(s);}
 
-    public void addSyntaxError(STNode e)
-    {
-        this.nodeSyntaxErrors.add(e);
-    }
-
-
-
-
-    /*public void outputSyntaxTree(SyntaxTree st)
-    {
-        System.out.println(st.preorder());
-    }
-    //reconsider function name
-    //st.preOrderTraversal()*/
-
-
-
-
-
+    public void addSyntaxError(STNode e) {this.nodeSyntaxErrors.add(e);}
 
     //Setters
 
@@ -237,4 +243,5 @@ public class OutputController
     public StringBuilder getMsgSyntaxErrors() {return this.msgSyntaxErrors;}
 
     public ArrayList<STNode> getNodeSyntaxErrors() {return this.nodeSyntaxErrors;}
+
 }

@@ -418,7 +418,7 @@ public class LexicalScanner
                 //c is an invalid char so check to see if the char after is valid
                 if(!Factory.isInvalid(this.lookUp(i+1)) || (this.lookUp(i+1) == '!'))
                 {
-                    temp = new Token(62, lex.toString(), this.lineNo, this.colNo);
+                    temp = new Token(Tokens.TUNDF, lex.toString(), this.lineNo, this.colNo);
                     //set pos to be the index of the valid char
                     this.pos = i+1;
                     //return a TUNDF token for all the invalid chars
@@ -445,7 +445,7 @@ public class LexicalScanner
                 //we have reached the end of the file
                 this.eof = true;
                 //set the token ID to be that of T_EOF
-                temp = new Token(0, "", this.lineNo, this.colNo);
+                temp = new Token(Tokens.T_EOF, "", this.lineNo, this.colNo);
                 //we are at the end of the file so we reset the counters
                 //this should help if we need to go back to the beginning of the file and regenerate tokens
                 this.pos = 0; this.lineNo = 0; this.colNo = 0;
@@ -456,9 +456,6 @@ public class LexicalScanner
         //Add the Token object regardless of type thats been generated to the ArrayList object acting as storage
         // safety net in a way
         this.stream.add(temp);
-        //add to symbol table?
-        A2.st.put(temp);
-        //add to hash table here?
         //Return the generated Token object so we can output it
         return temp;
     }
@@ -473,7 +470,7 @@ public class LexicalScanner
     //Postconditions: Outputs the Token object t, if we reach 60 characters then print the object and wrap and if t is an error Token its printed on new lines
     public void printToken(Token t)
     {
-        if(t.getTokenID() == 62)
+        if(t.getTokenID() == Tokens.TUNDF)
         {
             System.out.print(this.count == 0 ? t + "\n" : "\n" + t + "\n");
             this.count = 0;

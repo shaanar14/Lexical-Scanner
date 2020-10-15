@@ -57,10 +57,9 @@ public class Token
 
     //Preconditions: i >= 0
     //Postconditions: For the current Token object, assign the values of the parameters to the private member variables,
-    public Token(int i, String lex, int lineNo, int colNo)
+    public Token(Tokens t, String lex, int lineNo, int colNo)
     {
-        assert i >= 0 : "Token ID number has to be greater or equal to 0";
-        this.tokenID = Tokens.valueOf(i);
+        this.tokenID = t;
         this.lexeme = lex;
         this.lineNo = lineNo;
         this.colNo = colNo;
@@ -68,11 +67,11 @@ public class Token
 
     //Setters
 
-    //Preconditions: i >= 0
+    //Preconditions:  i >= 0
     //Postconditions: tokenID of the current Token object is assigned the value of i
-    public void setTokenID(int i) {this.tokenID = Tokens.valueOf(i);}
+    public void setTokenID(Tokens t) {this.tokenID = t;}
 
-    //Preconditions: None
+    //Preconditions:  None
     //Postconditions: lexeme of the current Token object is assigned the value of lex
     public void setLexeme(String lex) {this.lexeme = lex;}
 
@@ -80,7 +79,7 @@ public class Token
     //Postconditions: lineNo of the current Token  object is assigned the value of line
     public void setLineNo(int line) {this.lineNo = line;}
 
-    //Preconditions: col >= 0
+    //Preconditions:  col >= 0
     //Postconditions: colNo of the current Token object is assigned the value of col
     public void setColNo(int col) {this.colNo = col;}
 
@@ -88,17 +87,7 @@ public class Token
 
     //Preconditions: tokenID is not null
     //Postcondition: Returns the ID number value of the current Token object
-    public int getTokenID()
-    {
-        assert this.tokenID != null : "tokenID is null";
-        return this.tokenID.getID();
-    }
-
-    public Tokens getIDLabel()
-    {
-        assert this.tokenID != null : "tokenID is null";
-        return Tokens.valueOf(this.getTokenID());
-    }
+    public Tokens getTokenID() {return this.tokenID;}
 
     //Preconditions: None
     //Postconditions: Return the lexeme value for the current Token object
@@ -108,22 +97,37 @@ public class Token
     //Postconditions: Return the value of lineNo for the current Token object
     public int getLineNo() {return this.lineNo;}
 
-    //Preconditions: none
-    //Postconditions: return the value of colNo for the current Token object
+    //Preconditions:  None
+    //Postconditions: Return the value of colNo for the current Token object
     public int getColNo() {return  this.colNo;}
 
+    //Helper function for toString()
+    //Preconditions:  None
+    //Postconditions: Returns the String from TPRINT that matches the token ID for the current Token object
+    private String outputMatch()
+    {
+        for(String s : TPRINT)
+        {
+            //Remove white space so we can properly match to the token ID
+            String t = s.strip();
+            //Return the original string from TPRINT because we want to include the white space
+            if(this.getTokenID().toString().equals(t)) {return s;}
+        }
+        return "";
+    }
+
     //Override to neatly format and output a Token object
-    //Preconditions: Current token object (this) is != null
+    //Preconditions:  Current token object (this) is != null
     //Postconditions: Returns a formatted String depending on what the ID of the token is, used for output
     @Override
     public String toString()
     {
-        String output = "";
+        String output = outputMatch();
         //This is to fix indexing and out of bounds issues since 55 doesnt exist in the enum
-        output = this.getTokenID() >= 56 ? TPRINT[this.getTokenID() - 1] : TPRINT[this.getTokenID()];
+        //output = this.getTokenID() >= 56 ? TPRINT[this.getTokenID() - 1] : TPRINT[this.getTokenID()];
         //if the tokenID is that for an indentifier, integer literal, real literal or float literal print its lexeme
         //as per assignment spec the second field is rounded up in length to the next multiple of 6 characters
-        if(this.getTokenID() == 58 || this.getTokenID() == 59 || this.getTokenID() == 60)
+        if(this.getTokenID() == Tokens.TIDEN || this.getTokenID() == Tokens.TILIT || this.getTokenID() == Tokens.TFLIT)
         {
             //n will be the length of the lexeme
             double n = this.getLexeme().length();
@@ -154,12 +158,12 @@ public class Token
             output += String.format("%." + (int) n + "s", this.getLexeme()) + " ";
 
         }
-        else if(this.getTokenID() == 61)
+        else if(this.getTokenID() == Tokens.TSTRG)
         {
             output += String.format("\"%s\" ", this.getLexeme());
         }
         //if the token is TUNDF, TUNDF will print first then on a new line the lexeme for it then add the new line character
-        else if(this.getTokenID() == 62)
+        else if(this.getTokenID() == Tokens.TUNDF)
         {
             output += "\nlexical error " + this.getLexeme();
         }
